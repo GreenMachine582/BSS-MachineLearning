@@ -1,0 +1,5 @@
+# Forecasting Demand for Bike Sharing Systems and Analysis with Python
+Bike Sharing Systems (BSS) 
+
+Many cities and governments have been trying to focus on decreasing CO2 emissions, while also trying to control and understand mobility flows within their sphere of influence. Therefore, bike sharing programs were implemented around the world, and their popularity has been increasing due to environmental issues, pricing and convenience, creating a trend. The data that has been collected from the users of the bike sharing systems can be used to forecast future demand and analyse trends.
+This project will use bike sharing datasets provided by UCI, Kaggle and other Machine Learning Repositories. The main goal of the project will be to conduct a trend analysis and produce a model that can forecast demand while also being versatile enough to incorporate similar datasets. The previously mentioned datasets contain a variety of attributes that take into account not only the rider's details but the environment and surrounding variables.
