@@ -1,10 +1,14 @@
 # Miscellaneous
+log.txt
 .idea
 venv
 /venv
-/src/VERSION
-/src/__pycache__/
-/bike_sharing.egg-info/
+/examples/configs/*
+/examples/datasets/*
+/examples/models/*
+/examples/__pycache__/
+/BSS/VERSION
+/BSS/__pycache__/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
