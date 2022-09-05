@@ -20,8 +20,7 @@ class Dataset(object):
         self.name = self.config.dataset_name
         self.extension = self.config.dataset_extension
 
-        if kwargs:
-            self.update(**kwargs)
+        self.update(**kwargs)
 
         self.load()
 
@@ -33,7 +32,9 @@ class Dataset(object):
             - None
         """
         logging.info("Updating attributes")
-        kwargs = kwargs if 'kwargs' not in kwargs else kwargs['kwargs']
+        if 'kwargs' in kwargs and isinstance(kwargs['kwargs'], dict):
+            kwargs = kwargs['kwargs']
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 

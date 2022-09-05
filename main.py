@@ -37,10 +37,7 @@ def main() -> None:
     while run:
         print("""
         0 - Quit
-        1 - Clustering (TBA)
-        2 - Neural Network (TBA)
-        3 - Regression
-        4 - Best Model (TBA)
+        1 - Regression
         """)
         choice = input("Which question number: ")
         try:
@@ -52,9 +49,8 @@ def main() -> None:
         if choice is not None:
             if choice == 0:
                 return
-            elif choice == 3:
-                examples.regression_main()
-                return
+            elif choice == 1:
+                examples.regression.main()
             else:
                 print("\nPlease enter a valid choice!")
 

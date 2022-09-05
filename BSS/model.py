@@ -4,16 +4,35 @@ import logging
 import os
 import pickle
 
-from BSS.utils import checkPath
+from BSS import utils
 
 
 class Model(object):
 
-    def __init__(self, config: Config, model_name: str = None):
+    def __init__(self, config: Config, **kwargs: dict):
         self.config = config
-        self.model_name = self.config.dataset_name if model_name is None else model_name
 
         self.model = None
+
+        self._dir = self.config.model_dir
+        self.name = self.config.model_name
+        self.extension = self.config.model_extension
+
+        self.update(**kwargs)
+
+    def update(self, **kwargs: dict) -> None:
+        """
+        Updates the class attributes with given keys and values.
+        :param kwargs: dict[str: Any]
+        :return:
+            - None
+        """
+        logging.info("Updating attributes")
+        if 'kwargs' in kwargs and isinstance(kwargs['kwargs'], dict):
+            kwargs = kwargs['kwargs']
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def load(self) -> bool:
         """
@@ -21,7 +40,7 @@ class Model(object):
         :return:
             - completed - bool
         """
-        path, exist = checkPath(f"{self.config.model_dir}\\{self.model_name}", self.config.model_extension)
+        path, exist = utils.checkPath(f"{_dir}\\{name}", extension)
         if exist:
             logging.info(f"Loading model '{path}'")
             self.model = pickle.load(open(path, "rb"))
@@ -30,17 +49,15 @@ class Model(object):
             logging.warning(f"Missing file '{path}'")
         return False
 
-    def save(self) -> bool:
+    def save(self) -> None:
         """
         Saves the model by serialising the model object.
         :return:
-            - completed - bool
+            - None
         """
-        _, exist = checkPath(self.config.model_dir)
-        if not exist:
+        if not utils.checkPath(self.config.model_dir):
             os.makedirs(self.config.model_dir)
-        path, _ = checkPath(f"{self.config.model_dir}\\{self.model_name}", self.config.model_extension)
+        path, _ = utils.checkPath(f"{_dir}\\{name}", extension)
 
         logging.info(f"Saving file '{path}'")
         pickle.dump(self.model, open(path, "wb"))
-        return True

@@ -1,5 +1,6 @@
 
 import logging
+import math
 import os
 
 import BSS
@@ -23,11 +24,11 @@ def processData(config, dataset):
 
     for i in range(dataset.shape[0]):
         label = dataset[config.target].iloc[i]
-        dataset[config.target].iloc[i] = round(label / 100) * 100  # decrease the number of categories
+        dataset[config.target].iloc[i] = math.ceil(label / 1000) * 1000  # decrease the number of categories
 
     dataset[config.target] = dataset[config.target].astype('category')
 
-    # dataset = dataset.drop(['instant', 'dteday', 'registered', 'casual'], axis=1)  # temp remove
+    dataset = dataset.drop(['instant', 'dteday', 'registered', 'casual'], axis=1)  # temp remove
 
     X = dataset.drop(config.target, axis=1)  # denotes independent features
     y = dataset[config.target]  # denotes dependent variables
@@ -49,11 +50,17 @@ def extractFeatures(dataset, x, y):
     return dataset, x, y
 
 
-def exploratoryDataAnalysis(dataset):
+def exploratoryDataAnalysis(dataset, x, y):
     logging.info("Exploratory Data Analysis")
     # plots a corresponding matrix
     plt.figure()
     sn.heatmap(dataset.corr(), annot=True)
+
+    # plots a bar graph to represent number of instances per target
+    plt.figure()
+    y.value_counts().plot(kind="bar")
+
+    # plt.show()
 
 
 def splitDataset(config, x, y):
@@ -81,11 +88,11 @@ def resultAnalysis(model, x_test, y_test):
 
     cm = confusion_matrix(y_test, y_pred)
     print(cm)
-    # ConfusionMatrixDisplay(cm, display_labels=model.classes_).plot()
+    ConfusionMatrixDisplay(cm, display_labels=model.classes_).plot()
 
-    # plt.show()  # displays all plots
+    plt.show()  # displays all plots
 
-    print(classification_report(y_test, y_pred))
+    # print(classification_report(y_test, y_pred, labels=model.classes_))
 
     print("Accuracy:", accuracy_score(y_test, y_pred))
     print("Mean Absolute Error:", mean_absolute_error(y_test, y_pred))
@@ -95,7 +102,7 @@ def resultAnalysis(model, x_test, y_test):
 
 def main():
     # using mnist_784 for testing
-    config = BSS.Config(local_dir, 'mnist_784')  # 'Bike-Sharing-Dataset-day'
+    config = BSS.Config(local_dir, 'Bike-Sharing-Dataset-day')  # 'Bike-Sharing-Dataset-day'
 
     raw_dataset = BSS.Dataset(config)
 
@@ -106,7 +113,7 @@ def main():
 
     dataset, X, y = extractFeatures(dataset, X, y)
 
-    # exploratoryDataAnalysis(dataset)
+    exploratoryDataAnalysis(dataset, X, y)
 
     X_train, X_test, y_train, y_test = splitDataset(config, X, y)
 
