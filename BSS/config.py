@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 
-from BSS.utils import checkPath
+from BSS import utils
 
 
 class Config(object):
@@ -41,14 +41,15 @@ class Config(object):
         if not self.load():
             self.save()
 
-    def update(self, kwargs: dict) -> None:
+    def update(self, **kwargs: dict) -> None:
         """
         Updates the class attributes with given keys and values.
         :param kwargs: dict[str: Any]
         :return:
             - None
         """
-        logging.info("Updating config attributes")
+        logging.info("Updating attributes")
+        kwargs = kwargs if 'kwargs' not in kwargs else kwargs['kwargs']
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -58,12 +59,12 @@ class Config(object):
         :return:
             - completed - bool
         """
-        path, exist = checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
+        path, exist = utils.checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
 
         if exist:
             logging.info(f"Loading config {path}")
             with open(path, 'r', encoding='utf-8') as f:
-                self.update(json.load(f))
+                self.update(**json.load(f))
             return True
         else:
             logging.warning(f"Missing file '{path}'")
@@ -76,10 +77,9 @@ class Config(object):
         :return:
             - completed - bool
         """
-        _, exist = checkPath(self.config_dir)
-        if not exist:
+        if not utils.checkPath(self.config_dir):
             os.makedirs(self.config_dir)
-        path, _ = checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
+        path, _ = utils.checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
 
         logging.info(f"Saving file '{path}'")
         with open(path, 'w', encoding='utf-8') as f:

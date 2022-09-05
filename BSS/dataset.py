@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 
-from BSS.utils import checkPath
+from BSS import utils
 
 import pandas as pd
 from sklearn.datasets import fetch_openml
@@ -11,11 +11,31 @@ from sklearn.datasets import fetch_openml
 
 class Dataset(object):
 
-    def __init__(self, config: Config, dataset_name: str = None):
+    def __init__(self, config: Config, **kwargs: dict):
         self.config = config
-        self.dataset_name = self.config.dataset_name if dataset_name is None else dataset_name
 
         self.dataset = None
+
+        self._dir = self.config.dataset_dir
+        self.name = self.config.dataset_name
+        self.extension = self.config.dataset_extension
+
+        if kwargs:
+            self.update(**kwargs)
+
+        self.load()
+
+    def update(self, **kwargs: dict) -> None:
+        """
+        Updates the class attributes with given keys and values.
+        :param kwargs: dict[str: Any]
+        :return:
+            - None
+        """
+        logging.info("Updating attributes")
+        kwargs = kwargs if 'kwargs' not in kwargs else kwargs['kwargs']
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def bunchToDataframe(self, fetched_dataset: Bunch) -> DataFrame:
         """
@@ -37,32 +57,30 @@ class Dataset(object):
         :return:
             - completed - bool
         """
-        path, exist = checkPath(f"{self.config.dataset_dir}\\{self.dataset_name}", self.config.dataset_extension)
+        path, exist = utils.checkPath(f"{self._dir}\\{self.name}", self.extension)
         if not exist:
             logging.warning(f"Missing file '{path}'")
             logging.info("Fetching dataset from openml")
             try:
-                fetched_dataset = fetch_openml(self.dataset_name, version=1)
+                fetched_dataset = fetch_openml(self.name, version=1)
             except Exception as e:
                 logging.warning(e)
                 return False
             self.dataset = self.bunchToDataframe(fetched_dataset)
-            self.saveDataset()
+            self.save()
         logging.info(f"Loading dataset '{path}'")
-        self.dataset = pd.read_csv(path, names=self.config.names, sep=self.config.seperator, low_memory=False)
+        self.dataset = pd.read_csv(path, names=self.config.names, sep=self.config.seperator)
         return True
 
-    def save(self) -> bool:
+    def save(self) -> None:
         """
         Saves the dataset to a csv file using pandas.
         :return:
-            - completed - bool
+            - None
         """
-        _, exist = checkPath(self.config.dataset_dir)
-        if not exist:
-            os.makedirs(self.config.dataset_dir)
-        path, _ = checkPath(f"{self.config.dataset_dir}\\{self.dataset_name}", self.config.dataset_extension)
+        if not utils.checkPath(self._dir):
+            os.makedirs(self._dir)
+        path = utils.joinExtension(f"{self._dir}\\{self.name}", self.extension)
 
         logging.info(f"Saving file '{path}'")
         self.dataset.to_csv(path, sep=self.config.seperator, index=False)
-        return True
