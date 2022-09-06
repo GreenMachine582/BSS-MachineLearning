@@ -15,7 +15,7 @@ class Model(object):
         self.model = None
 
         self._dir = self.config.model_dir
-        self.name = self.config.model_name
+        self.name = self.config.name
         self.extension = self.config.model_extension
 
         self.update(**kwargs)
@@ -40,7 +40,7 @@ class Model(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{_dir}\\{name}", extension)
+        path, exist = utils.checkPath(f"{self._dir}\\{self.name}", self.extension)
         if exist:
             logging.info(f"Loading model '{path}'")
             self.model = pickle.load(open(path, "rb"))
@@ -57,7 +57,7 @@ class Model(object):
         """
         if not utils.checkPath(self.config.model_dir):
             os.makedirs(self.config.model_dir)
-        path, _ = utils.checkPath(f"{_dir}\\{name}", extension)
+        path, _ = utils.checkPath(f"{self._dir}\\{self.name}", self.extension)
 
         logging.info(f"Saving file '{path}'")
         pickle.dump(self.model, open(path, "wb"))

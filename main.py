@@ -4,8 +4,12 @@ import logging
 import os
 import sys
 from time import time
+import warnings
 
 import examples
+
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Sets up the in-built logger to record key information and save it to a text file
 logging.basicConfig(level=logging.INFO, filename='log.txt', filemode='w',
@@ -37,7 +41,10 @@ def main() -> None:
     while run:
         print("""
         0 - Quit
-        1 - Regression
+        1 - Clustering
+        2 - Neural Network
+        3 - Regression
+        4 - Testing
         """)
         choice = input("Which question number: ")
         try:
@@ -50,7 +57,13 @@ def main() -> None:
             if choice == 0:
                 return
             elif choice == 1:
+                examples.clustering.main()
+            elif choice == 2:
+                examples.neural_network.main()
+            elif choice == 3:
                 examples.regression.main()
+            elif choice == 4:
+                examples.test.main()
             else:
                 print("\nPlease enter a valid choice!")
 

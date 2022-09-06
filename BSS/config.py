@@ -14,7 +14,8 @@ class Config(object):
     class can use. The end-user can save, load and update the attributes.
     """
 
-    def __init__(self, working_dir: str = '', dataset_name: str = ''):
+    def __init__(self, working_dir: str = '', dataset_name: str = '', model_technique: str = 'regression',
+                 model_algorithm: str = 'logistic'):
         self.working_dir = working_dir
         self.dataset_name = dataset_name
 
@@ -25,9 +26,6 @@ class Config(object):
         self.dataset_extension = '.csv'
         self.model_extension = '.model'
 
-        self.show_figs = True
-        self.show_small_responses = True
-
         # dataset related
         self.seperator = ','
         self.target = 'target'
@@ -36,7 +34,10 @@ class Config(object):
         # training related
         self.split_ratio = 0.8
         self.random_seed = 0
-        self.model_type = 'LogisticRegression'
+        self.model_technique = model_technique
+        self.model_algorithm = model_algorithm
+
+        self.name = f"{dataset_name}-{model_technique}-{model_algorithm}"
 
         if not self.load():
             self.save()
@@ -61,7 +62,7 @@ class Config(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
+        path, exist = utils.checkPath(f"{self.config_dir}\\{self.name}", self.config_extension)
 
         if exist:
             logging.info(f"Loading config {path}")
@@ -81,7 +82,7 @@ class Config(object):
         """
         if not utils.checkPath(self.config_dir):
             os.makedirs(self.config_dir)
-        path, _ = utils.checkPath(f"{self.config_dir}\\{self.dataset_name}", self.config_extension)
+        path, _ = utils.checkPath(f"{self.config_dir}\\{self.name}", self.config_extension)
 
         logging.info(f"Saving file '{path}'")
         with open(path, 'w', encoding='utf-8') as f:
