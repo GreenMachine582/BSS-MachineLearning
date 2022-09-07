@@ -189,6 +189,8 @@ def main():
 
     model, score = trainModel(X_train, y_train)
 
+    BSS.Model(config, model=model).save()
+
     resultAnalysis(model, score, X_train, y_train, X_test, y_test)
 
     return
