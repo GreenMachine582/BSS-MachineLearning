@@ -35,7 +35,7 @@ setup(
     name='bss-machinelearning',
     version=version,
     author='Matthew Johnson, Noel Williams, Yisha Chen, Yuki-Jiayi Li',
-    author_email='greenchicken1902@gmail.com',
+    author_email='greenchicken1902@gmail.com, noelosdub@gmail.com',
     maintainer='Matthew Johnson',
     maintainer_email='greenchicken1902@gmail.com',
     description='Forecasting Demand for Bike Sharing Systems and Analysis with Python',
