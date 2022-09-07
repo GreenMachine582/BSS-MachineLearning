@@ -21,7 +21,6 @@ _temp : The values are derived via (t-t_min)/(t_max-t_min), t_min=-16, t_max=+50
 
 _atemp : The values are derived via (t-t_min)/(t_max-t_min), t_min=-8, t_max=+39 (only in hourly scale)_
 
-
 | Weather number | Weather                                                                                 |
 |----------------|-----------------------------------------------------------------------------------------|
 | 1              | Clear, Few clouds, Partly cloudy, Partly cloudy                                         |
