@@ -28,7 +28,7 @@ class Config(object):
 
         # dataset related
         self.seperator = ','
-        self.target = 'target'
+        self.target = 'cnt'
         self.names = None
 
         # training related
