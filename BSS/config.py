@@ -14,17 +14,13 @@ class Config(object):
     class can use. The end-user can save, load and update the attributes.
     """
 
-    def __init__(self, working_dir: str = '', dataset_name: str = '', model_technique: str = 'regression',
-                 model_algorithm: str = 'logistic'):
+    def __init__(self, working_dir: str = '', **kwargs: Any | dict):
         self.working_dir = working_dir
-        self.dataset_name = dataset_name
+        self.dataset_name = ''
 
         self.config_dir = working_dir + '\\configs'
-        self.dataset_dir = working_dir + '\\datasets'
-        self.model_dir = working_dir + '\\models'
+
         self.config_extension = '.json'
-        self.dataset_extension = '.csv'
-        self.model_extension = '.model'
 
         # dataset related
         self.seperator = ','
@@ -34,18 +30,20 @@ class Config(object):
         # training related
         self.split_ratio = 0.8
         self.random_seed = 0
-        self.model_technique = model_technique
-        self.model_algorithm = model_algorithm
+        self.model_technique = 'regression'
+        self.model_algorithm = 'logistic'
 
-        self.name = f"{dataset_name}-{model_technique}-{model_algorithm}"
+        self.update(**kwargs)
 
-        if not self.load():
+        self.name = f"{self.dataset_name}-{self.model_technique}-{self.model_algorithm}"
+
+        if self.dataset_name and not self.load():
             self.save()
 
-    def update(self, **kwargs: dict) -> None:
+    def update(self, **kwargs: Any | dict) -> None:
         """
         Updates the class attributes with given keys and values.
-        :param kwargs: dict[str: Any]
+        :param kwargs: Any | dict[str: Any]
         :return:
             - None
         """
