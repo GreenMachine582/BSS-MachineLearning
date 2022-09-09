@@ -57,13 +57,13 @@ def main() -> None:
             if choice == 0:
                 return
             elif choice == 1:
-                examples.clustering.main()
+                examples.clustering.main(ROOT_DIR)
             elif choice == 2:
-                examples.neural_network.main()
+                examples.neural_network.main(ROOT_DIR)
             elif choice == 3:
-                examples.regression.main()
+                examples.regression.main(ROOT_DIR)
             elif choice == 4:
-                examples.test.main()
+                examples.test.main(ROOT_DIR)
             else:
                 print("\nPlease enter a valid choice!")
 

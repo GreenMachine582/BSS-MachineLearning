@@ -103,9 +103,9 @@ def resultAnalysis(model, x_test, y_test):
     print("Mean Root Squared Error:", np.sqrt(mean_squared_error(y_test, y_pred)))
 
 
-def main():
+def main(dir_=''):
     # using mnist_784 for testing
-    config = BSS.Config(local_dir, 'Bike-Sharing-Dataset-day', 'regression', 'logistic')
+    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-day', 'regression', 'logistic')
 
     raw_dataset = BSS.Dataset(config)
 
@@ -129,4 +129,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(local_dir)

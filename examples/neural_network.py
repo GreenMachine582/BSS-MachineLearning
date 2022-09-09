@@ -101,9 +101,9 @@ def resultAnalysis(model, x_test, y_test):
     print("Mean Root Squared Error:", np.sqrt(mean_squared_error(y_test, y_pred)))
 
 
-def main():
+def main(dir_=''):
     # using mnist_784 for testing
-    config = BSS.Config(local_dir, 'Bike-Sharing-Dataset-day', 'neural_network', 'back_propagation')
+    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-day', 'neural_network', 'back_propagation')
 
     raw_dataset = BSS.Dataset(config)
 
@@ -126,4 +126,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(local_dir)
