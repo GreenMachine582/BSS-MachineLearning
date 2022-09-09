@@ -96,11 +96,11 @@ class Dataset(object):
         """
         logging.info(f"Handling missing values for '{self.name}'")
         if self.dataset is None:
-            return None
-        else:
-            # fills the missing value with the next or previous instance value
-            self.dataset = self.dataset.fillna(method="ffill", limit=1)  # forward fill
-            self.dataset = self.dataset.fillna(method="bfill", limit=1)  # backward fill
+            return
 
-            # removes remaining instances with missing values
-            self.dataset = self.dataset.dropna()
+        # fills the missing value with the next or previous instance value
+        self.dataset = self.dataset.fillna(method="ffill", limit=1)  # forward fill
+        self.dataset = self.dataset.fillna(method="bfill", limit=1)  # backward fill
+
+        # removes remaining instances with missing values
+        self.dataset = self.dataset.dropna()

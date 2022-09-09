@@ -18,7 +18,7 @@ class Config(object):
         self.working_dir = working_dir
         self.dataset_name = ''
 
-        self.config_dir = working_dir + '\\configs'
+        self.config_dir = working_dir + '/configs'
 
         self.config_extension = '.json'
 
@@ -60,7 +60,7 @@ class Config(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.config_dir}\\{self.name}", self.config_extension)
+        path, exist = utils.checkPath(f"{self.config_dir}/{self.name}", self.config_extension)
 
         if exist:
             logging.info(f"Loading config {path}")
@@ -80,7 +80,7 @@ class Config(object):
         """
         if not utils.checkPath(self.config_dir):
             os.makedirs(self.config_dir)
-        path, _ = utils.checkPath(f"{self.config_dir}\\{self.name}", self.config_extension)
+        path, _ = utils.checkPath(f"{self.config_dir}/{self.name}", self.config_extension)
 
         logging.info(f"Saving file '{path}'")
         with open(path, 'w', encoding='utf-8') as f:
