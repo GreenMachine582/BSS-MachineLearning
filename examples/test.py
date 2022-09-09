@@ -168,11 +168,12 @@ def resultAnalysis(model, score, x_train, y_train, x_test, y_test):
     regression_results(y_test, y_pred)
 
 
-def main():
-    # using mnist_784 for testing
-    config = BSS.Config(local_dir, 'Bike-Sharing-Dataset-day', 'test', 'all')
+def main(dir_=''):
+    config = BSS.Config(dir_, dataset_name='Bike-Sharing-Dataset-day', model_technique='test',
+                        model_algorithm='all')
 
     raw_dataset = BSS.Dataset(config)
+    raw_dataset.load()
 
     if raw_dataset.dataset is None:
         logging.error("Couldn't load a dataset")
@@ -197,4 +198,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(local_dir)
