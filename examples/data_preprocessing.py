@@ -11,12 +11,21 @@ so this document is only applicable to the data given in /examples/datasets
 __author__ = "Yuki"
 __date__ = "08/09/2022"
 
-from pandas import DataFrame
-import pandas as pd
+
 import os
 
+import BSS
 
-def data_consolidation(df_dc, df_london):
+import numpy as np
+from pandas import DataFrame
+import pandas as pd
+
+
+# Constants
+local_dir = os.path.dirname(__file__)
+
+
+def dataConsolidation(df_dc, df_london):
     """
     Input: data frame of bike_dc and bike_london
     Output: data frame of merged data
@@ -174,60 +183,33 @@ def data_consolidation(df_dc, df_london):
     return df_new
 
 
-def missing_data_processing(dname, df):
-    """
-    Input: date frame of raw data
-    Output: data frame without missing data
-
-    Take raw data and with data cleaning technic to handle with the missing data
-    """
-    if df.isnull().sum().sum() == 0:
-        print("missing data in {} processed".format(dname))
-        print("\n")
-        return df
-    else:
-        df.dropna(inplace=True)
-        print("missing data in {} processed".format(dname))
-        print("\n")
-        return df
-
-
-def main():
+def main(dir_: str = '') -> None:
+    config = BSS.Config(dir_)
     # Bike-Sharing-Dataset-hour is a detailed version of Bike-Sharing-Dataset-day, it will be used in process
-    bike_dc = pd.read_csv("datasets/Bike-Sharing-Dataset-hour.csv")
-    bike_london = pd.read_csv("datasets/london-merged-day.csv")
+    bike_dc = BSS.Dataset(config, name='Bike-Sharing-Dataset-hour')
+    bike_london = BSS.Dataset(config, name='london-merged-day')
 
-    # delete missing data
-    bike_dc = missing_data_processing("Bike-Sharing-Dataset-hour.csv", bike_dc)
-    bike_london = missing_data_processing("london-merged-day.csv", bike_london)
+    # loads the datasets
+    bike_dc.load()
+    bike_london.load()
+
+    # handle missing data
+    bike_dc.handleMissingData()
+    bike_london.handleMissingData()
+
+    # updates the datasets with the processed dataset and accompanying name
+    bike_dc.update(dataset=bike_dc.dataset, name=bike_dc.name+'-processed')
+    bike_london.update(dataset=bike_london.dataset, name=bike_london.name+'-processed')
 
     # data consolidation
-    bike = data_consolidation(bike_dc, bike_london)
+    consolidated_bike = dataConsolidation(bike_dc.dataset, bike_london.dataset)
+    bike = BSS.Dataset(config, dataset=consolidated_bike, name='bike-consolidated')
 
-    # write processed data
-    if os.path.exists("datasets/Bike-Sharing-Dataset-hour-processed.csv"):
-        os.remove("datasets/Bike-Sharing-Dataset-hour-processed.csv")
-    if os.path.exists("datasets/london-merged-day-processed.csv"):
-        os.remove("datasets/london-merged-day-processed.csv")
-    if os.path.exists("datasets/bike-consolidated.csv"):
-        os.remove("datasets/bike-consolidated.csv")
-
-    bike_dc.to_csv("./datasets/Bike-Sharing-Dataset-hour-processed.csv", index=False)
-    print("Processed 'Bike-Sharing-Dataset-hour.csv' has been writen in "
-          "'./datasets/Bike-Sharing-Dataset-hour-processed.csv'")
-    print("\n")
-
-    bike_london.to_csv("./datasets/london-merged-day-processed.csv", index=False)
-    print("Processed 'london-merged-day.csv' has been writen in "
-          "'./datasets/london-merged-day-processed.csv'")
-    print("\n")
-
-    bike.to_csv("./datasets/bike-consolidated.csv", index=False)
-    print("Consolidated dataset has been writen in './datasets/bike-consolidated.csv'")
-    print("\n")
-
-    return None
+    # saves the processed datasets
+    bike_dc.save()
+    bike_london.save()
+    bike.save()
 
 
 if __name__ == '__main__':
-    main()
+    main(local_dir)
