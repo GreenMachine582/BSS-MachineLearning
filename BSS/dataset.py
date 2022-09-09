@@ -11,30 +11,29 @@ from sklearn.datasets import fetch_openml
 
 class Dataset(object):
 
-    def __init__(self, config: Config, **kwargs: dict):
+    def __init__(self, config: Config, **kwargs: Any | dict):
         self.config = config
 
         self.dataset = None
 
-        self._dir = self.config.dataset_dir
+        self.dir_ = self.config.working_dir + '\\datasets'
         self.name = self.config.dataset_name
-        self.extension = self.config.dataset_extension
+        self.extension = '.csv'
 
         self.update(**kwargs)
 
-        self.load()
-
-    def update(self, **kwargs: dict) -> None:
+    def update(self, **kwargs: Any | dict) -> None:
         """
         Updates the class attributes with given keys and values.
-        :param kwargs: dict[str: Any]
+        :param kwargs: Any | dict[str: Any]
         :return:
             - None
         """
-        logging.info("Updating attributes")
         if 'kwargs' in kwargs and isinstance(kwargs['kwargs'], dict):
             kwargs = kwargs['kwargs']
 
+        name = self.name if 'name' not in kwargs else kwargs['name']
+        logging.info(f"Updating '{name}' dataset attributes")
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -58,7 +57,7 @@ class Dataset(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self._dir}\\{self.name}", self.extension)
+        path, exist = utils.checkPath(f"{self.dir_}\\{self.name}", self.extension)
         if not exist:
             logging.warning(f"Missing file '{path}'")
             logging.info("Fetching dataset from openml")
@@ -79,9 +78,25 @@ class Dataset(object):
         :return:
             - None
         """
-        if not utils.checkPath(self._dir):
-            os.makedirs(self._dir)
-        path = utils.joinExtension(f"{self._dir}\\{self.name}", self.extension)
+        if not utils.checkPath(self.dir_):
+            os.makedirs(self.dir_)
+        path = utils.joinExtension(f"{self.dir_}\\{self.name}", self.extension)
 
         logging.info(f"Saving file '{path}'")
         self.dataset.to_csv(path, sep=self.config.seperator, index=False)
+
+    def handleMissingData(self) -> None:
+        """
+        Handles missing values by forward and backward value filling, this is a common
+        strategy for datasets with time series. Instances with remaining missing values
+        will be dropped.
+        :return:
+            - None
+        """
+        logging.info(f"Handling missing values for '{self.name}'")
+        # fills the missing value with the next or previous instance value
+        self.dataset = self.dataset.fillna(method="ffill", limit=1)  # forward fill
+        self.dataset = self.dataset.fillna(method="bfill", limit=1)  # backward fill
+
+        # removes remaining instances with missing values
+        self.dataset = self.dataset.dropna()
