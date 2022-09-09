@@ -11,7 +11,6 @@ so this document is only applicable to the data given in /examples/datasets
 __author__ = "Yuki"
 __date__ = "08/09/2022"
 
-
 import os
 
 import BSS
@@ -19,7 +18,6 @@ import BSS
 import numpy as np
 from pandas import DataFrame
 import pandas as pd
-
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -198,17 +196,24 @@ def main(dir_: str = '') -> None:
     bike_london.handleMissingData()
 
     # updates the datasets with the processed dataset and accompanying name
-    bike_dc.update(dataset=bike_dc.dataset, name=bike_dc.name+'-processed')
-    bike_london.update(dataset=bike_london.dataset, name=bike_london.name+'-processed')
+    bike_dc.update(dataset=bike_dc.dataset, name=bike_dc.name + '-processed')
+    bike_london.update(dataset=bike_london.dataset, name=bike_london.name + '-processed')
 
     # data consolidation
     consolidated_bike = dataConsolidation(bike_dc.dataset, bike_london.dataset)
     bike = BSS.Dataset(config, dataset=consolidated_bike, name='bike-consolidated')
 
+    # feature pre-selection
+    # the pre-selection can only remove the attributes which are totally depend on other attributes.
+    pre_selected_bike = bike.dataset.copy()
+    pre_selected_bike.drop(["season", "is_workingday"], axis=1, inplace=True)
+    selected = BSS.Dataset(config, dataset=pre_selected_bike, name="bike-pre-selected")
+
     # saves the processed datasets
     bike_dc.save()
     bike_london.save()
     bike.save()
+    selected.save()
 
 
 if __name__ == '__main__':

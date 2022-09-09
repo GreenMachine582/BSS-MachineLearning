@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
-from BSS import utils
+from BSS import utils, Config
 
 import pandas as pd
 from sklearn.datasets import fetch_openml
@@ -16,7 +17,7 @@ class Dataset(object):
 
         self.dataset = None
 
-        self.dir_ = self.config.working_dir + '\\datasets'
+        self.dir_ = self.config.working_dir + '/datasets'
         self.name = self.config.dataset_name
         self.extension = '.csv'
 
@@ -57,7 +58,7 @@ class Dataset(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.dir_}\\{self.name}", self.extension)
+        path, exist = utils.checkPath(f"{self.dir_}/{self.name}", self.extension)
         if not exist:
             logging.warning(f"Missing file '{path}'")
             logging.info("Fetching dataset from openml")
@@ -80,7 +81,7 @@ class Dataset(object):
         """
         if not utils.checkPath(self.dir_):
             os.makedirs(self.dir_)
-        path = utils.joinExtension(f"{self.dir_}\\{self.name}", self.extension)
+        path = utils.joinExtension(f"{self.dir_}/{self.name}", self.extension)
 
         logging.info(f"Saving file '{path}'")
         self.dataset.to_csv(path, sep=self.config.seperator, index=False)
@@ -94,9 +95,12 @@ class Dataset(object):
             - None
         """
         logging.info(f"Handling missing values for '{self.name}'")
-        # fills the missing value with the next or previous instance value
-        self.dataset = self.dataset.fillna(method="ffill", limit=1)  # forward fill
-        self.dataset = self.dataset.fillna(method="bfill", limit=1)  # backward fill
+        if self.dataset is None:
+            return None
+        else:
+            # fills the missing value with the next or previous instance value
+            self.dataset = self.dataset.fillna(method="ffill", limit=1)  # forward fill
+            self.dataset = self.dataset.fillna(method="bfill", limit=1)  # backward fill
 
-        # removes remaining instances with missing values
-        self.dataset = self.dataset.dropna()
+            # removes remaining instances with missing values
+            self.dataset = self.dataset.dropna()
