@@ -13,7 +13,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # Sets up the in-built logger to record key information and save it to a text file
 logging.basicConfig(level=logging.INFO, filename='log.txt', filemode='w',
-                    format="%(asctime)s - %(levelname)s - '%(message)s' - %(funcName)s")
+                    format="%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - '%(message)s'")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Outputs the loggings into screen output
 
 # Constants
