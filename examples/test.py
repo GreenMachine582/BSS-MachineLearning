@@ -118,7 +118,6 @@ def compareModels(x_train, y_train):
     plt.figure()
     plt.boxplot(results, labels=names)
     plt.title('Algorithm Comparison')
-    plt.show()
 
 
 def rmse(actual, predict):
@@ -138,11 +137,12 @@ def trainModel(x_train, y_train):
                     'n_estimators': [100, 500, 1000, 1500],
                     'max_depth': [4, 6, 8, 10]}
     tscv = TimeSeriesSplit(n_splits=10)
-    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=-1)
+    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring='r2', n_jobs=-1)
     gsearch.fit(x_train, y_train)
     best_model = gsearch.best_estimator_
     best_score = gsearch.best_score_
-    return best_model, best_score
+    best_params = gsearch.best_params_
+    return best_model, best_score, best_params
 
 
 def regression_results(y_test, y_pred):
@@ -191,11 +191,15 @@ def main(dir_=local_dir):
 
     compareModels(x_train, y_train)
 
-    model, score = trainModel(x_train, y_train)
+    model, score, best_params = trainModel(x_train, y_train)
+
+    print(best_params)
 
     BSS.Model(config, model=model).save()
 
     resultAnalysis(model, score, x_test, y_test)
+
+    plt.show()
 
     return
 
