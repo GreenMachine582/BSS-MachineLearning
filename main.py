@@ -41,10 +41,10 @@ def main() -> None:
     while run:
         print("""
         0 - Quit
-        1 - Clustering
-        2 - Neural Network
-        3 - Regression
-        4 - Testing
+        1 - Testing
+        2 - Clustering (TBA)
+        3 - Neural Network (TBA)
+        4 - Regression (TBA)
         """)
         choice = input("Which question number: ")
         try:
@@ -57,13 +57,13 @@ def main() -> None:
             if choice == 0:
                 return
             elif choice == 1:
-                examples.clustering.main(ROOT_DIR)
+                examples.test.main()
             elif choice == 2:
-                examples.neural_network.main(ROOT_DIR)
+                pass
             elif choice == 3:
-                examples.regression.main(ROOT_DIR)
+                pass
             elif choice == 4:
-                examples.test.main(ROOT_DIR)
+                pass
             else:
                 print("\nPlease enter a valid choice!")
 
