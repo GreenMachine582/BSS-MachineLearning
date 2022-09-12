@@ -14,9 +14,11 @@ from sklearn.model_selection import train_test_split, TimeSeriesSplit, cross_val
 from sklearn import metrics
 from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
+from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
+from sklearn.cluster import SpectralBiclustering, AgglomerativeClustering
+from sklearn.tree import DecisionTreeClassifier
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -99,6 +101,11 @@ def compareModels(x_train, y_train):
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
     models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
+    #models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
+    models.append(('AC', AgglomerativeClustering(n_clusters=4)))
+    models.append(('TRE', DecisionTreeClassifier(criterion='entropy', min_samples_split=25)))
+    models.append(('NNC', MLPClassifier(solver='lbfgs')))
+
 
     for name, model in models:
         tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
