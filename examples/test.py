@@ -67,7 +67,7 @@ def extractFeatures(config, dataset):
     df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
     df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
 
-    df = df.drop(['mnth', 'season'], axis=1)
+    df = df.drop(['season'], axis=1)
 
     dataset.update(df=df, suffix='-extracted')
     dataset.handleMissingData()
@@ -95,16 +95,16 @@ def splitDataset(config, x, y):
 
 def compareModels(x_train, y_train):
     # TODO: separate the clustering techniques and apply appropriate prediction
-    #  and scoring method
+    #  and scoring methods
     logging.info("Training model")
     models, names, results = [], [], []
     models.append(('LR', LinearRegression()))
     models.append(('NN', MLPRegressor(solver='lbfgs')))  # neural network
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
-    # models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
-    # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
+    models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
     # models.append(('AC', AgglomerativeClustering(n_clusters=4)))
+    # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
 
     for name, model in models:
         tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
@@ -131,13 +131,14 @@ def rmse(actual, predict):
 
 
 def trainModel(x_train, y_train):
+    rmse_score = metrics.make_scorer(rmse, greater_is_better=False)
     model = GradientBoostingRegressor()
-    param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04],
-                    'subsample': [0.9, 0.5, 0.2, 0.1],
-                    'n_estimators': [100, 500, 1000, 1500],
-                    'max_depth': [4, 6, 8, 10]}
+    param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04, 0.05],
+                    'max_depth': [2, 3, 4, 6, 8, 10, 12],
+                    'n_estimators': [100, 300, 500, 700, 1000, 1500, 2000],
+                    'subsample': [0.9, 0.5, 0.2, 0.1, 0.08, 0.06]}
     tscv = TimeSeriesSplit(n_splits=10)
-    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring='r2', n_jobs=-1)
+    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring=rmse_score, n_jobs=-1)
     gsearch.fit(x_train, y_train)
     best_model = gsearch.best_estimator_
     best_score = gsearch.best_score_
@@ -148,15 +149,15 @@ def trainModel(x_train, y_train):
 def regression_results(y_test, y_pred):
     # Regression metrics
     explained_variance = metrics.explained_variance_score(y_test, y_pred)
-    mean_absolute_error = metrics.mean_absolute_error(y_test, y_pred)
-    mse = metrics.mean_squared_error(y_test, y_pred)
     mean_squared_log_error = metrics.mean_squared_log_error(y_test, y_pred)
     r2 = metrics.r2_score(y_test, y_pred)
+    mae = metrics.mean_absolute_error(y_test, y_pred)
+    mse = metrics.mean_squared_error(y_test, y_pred)
 
     print('explained_variance: ', round(explained_variance, 4))
     print('mean_squared_log_error: ', round(mean_squared_log_error, 4))
     print('r2: ', round(r2, 4))
-    print('MAE: ', round(mean_absolute_error, 4))
+    print('MAE: ', round(mae, 4))
     print('MSE: ', round(mse, 4))
     print('RMSE: ', round(np.sqrt(mse), 4))
 
@@ -167,7 +168,6 @@ def resultAnalysis(model, score, x_test, y_test):
     print("Score - %.4f%s" % (score * 100, "%"))
 
     y_pred = model.predict(x_test)
-
     regression_results(y_test, y_pred)
 
 
@@ -193,7 +193,7 @@ def main(dir_=local_dir):
 
     model, score, best_params = trainModel(x_train, y_train)
 
-    print(best_params)
+    # print(best_params)
 
     BSS.Model(config, model=model).save()
 
