@@ -67,7 +67,7 @@ def extractFeatures(config, dataset):
     df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
     df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
 
-    df = df.drop(['season'], axis=1)
+    df = df.drop(['season', 'mnth'], axis=1)
 
     dataset.update(df=df, suffix='-extracted')
     dataset.handleMissingData()
@@ -103,6 +103,7 @@ def compareModels(x_train, y_train):
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
     models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
+    models.append(('GBR', GradientBoostingRegressor()))
     # models.append(('AC', AgglomerativeClustering(n_clusters=4)))
     # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
 
@@ -146,39 +147,13 @@ def trainModel(x_train, y_train):
     return best_model, best_score, best_params
 
 
-def regression_results(y_test, y_pred):
-    # Regression metrics
-    explained_variance = metrics.explained_variance_score(y_test, y_pred)
-    mean_squared_log_error = metrics.mean_squared_log_error(y_test, y_pred)
-    r2 = metrics.r2_score(y_test, y_pred)
-    mae = metrics.mean_absolute_error(y_test, y_pred)
-    mse = metrics.mean_squared_error(y_test, y_pred)
-
-    print('explained_variance: ', round(explained_variance, 4))
-    print('mean_squared_log_error: ', round(mean_squared_log_error, 4))
-    print('r2: ', round(r2, 4))
-    print('MAE: ', round(mae, 4))
-    print('MSE: ', round(mse, 4))
-    print('RMSE: ', round(np.sqrt(mse), 4))
-
-
-def resultAnalysis(model, score, x_test, y_test):
-    logging.info("Analysing results")
-
-    print("Score - %.4f%s" % (score * 100, "%"))
-
-    y_pred = model.predict(x_test)
-    regression_results(y_test, y_pred)
-
-
 def main(dir_=local_dir):
     config = BSS.Config(dir_, dataset_name='Bike-Sharing-Dataset-day', model_technique='test',
                         model_algorithm='all')
 
     dataset = BSS.Dataset(config)
-    dataset.load()
 
-    if dataset.df is None:
+    if not dataset.load():
         logging.error("Couldn't load a dataset")
 
     dataset = processData(config, dataset)
@@ -191,13 +166,11 @@ def main(dir_=local_dir):
 
     compareModels(x_train, y_train)
 
-    model, score, best_params = trainModel(x_train, y_train)
+    model, score, _ = trainModel(x_train, y_train)
 
-    # print(best_params)
-
-    BSS.Model(config, model=model).save()
-
-    resultAnalysis(model, score, x_test, y_test)
+    model = BSS.Model(config, model=model)
+    model.save()
+    model.resultAnalysis(score, x_test, y_test)
 
     plt.show()
 
