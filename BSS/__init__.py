@@ -1,8 +1,8 @@
 
-from BSS.config import Config
-from BSS.dataset import Dataset
-from BSS.model import Model
-import BSS.utils
+from .config import Config
+from .dataset import Dataset
+from .model import Model
+from . import utils
 
 
 __all__ = ['Config', 'Dataset', 'Model']

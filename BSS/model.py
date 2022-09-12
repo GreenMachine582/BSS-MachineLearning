@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+from typing import Any
 
-from BSS import utils
+from BSS import utils, Config
 
 
 class Model(object):
@@ -14,7 +15,7 @@ class Model(object):
 
         self.model = None
 
-        self.dir_ = self.config.working_dir + '/models'
+        self.dir_ = self.config.working_dir + '\\models'
         self.name = self.config.name
         self.extension = '.model'
 
@@ -41,7 +42,7 @@ class Model(object):
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.dir_}/{self.name}", self.extension)
+        path, exist = utils.checkPath(f"{self.dir_}\\{self.name}", self.extension)
         if exist:
             logging.info(f"Loading model '{path}'")
             self.model = pickle.load(open(path, "rb"))
@@ -58,7 +59,7 @@ class Model(object):
         """
         if not utils.checkPath(self.dir_):
             os.makedirs(self.dir_)
-        path, _ = utils.checkPath(f"{self.dir_}/{self.name}", self.extension)
+        path, _ = utils.checkPath(f"{self.dir_}\\{self.name}", self.extension)
 
         logging.info(f"Saving file '{path}'")
         pickle.dump(self.model, open(path, "wb"))
