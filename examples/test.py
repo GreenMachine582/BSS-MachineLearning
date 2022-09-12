@@ -121,25 +121,14 @@ def compareModels(x_train, y_train):
     plt.title('Algorithm Comparison')
 
 
-def rmse(actual, predict):
-    predict = np.array(predict)
-    actual = np.array(actual)
-    distance = predict - actual
-    square_distance = distance ** 2
-    mean_square_distance = square_distance.mean()
-    score = np.sqrt(mean_square_distance)
-    return score
-
-
 def trainModel(x_train, y_train):
-    rmse_score = metrics.make_scorer(rmse, greater_is_better=False)
     model = GradientBoostingRegressor()
     param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04, 0.05],
                     'max_depth': [2, 3, 4, 6, 8, 10, 12],
                     'n_estimators': [100, 300, 500, 700, 1000, 1500, 2000],
                     'subsample': [0.9, 0.5, 0.2, 0.1, 0.08, 0.06]}
     tscv = TimeSeriesSplit(n_splits=10)
-    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring=rmse_score, n_jobs=-1)
+    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=-1)
     gsearch.fit(x_train, y_train)
     best_model = gsearch.best_estimator_
     best_score = gsearch.best_score_

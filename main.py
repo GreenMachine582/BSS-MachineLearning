@@ -42,9 +42,11 @@ def main() -> None:
         print("""
         0 - Quit
         1 - Testing
-        2 - Clustering (TBA)
-        3 - Neural Network (TBA)
-        4 - Regression (TBA)
+        2 - Feature selection
+        3 - Find best params
+        4 - Clustering (TBA)
+        5 - Neural Network (TBA)
+        6 - Regression (TBA)
         """)
         choice = input("Which question number: ")
         try:
@@ -59,10 +61,14 @@ def main() -> None:
             elif choice == 1:
                 examples.test.main()
             elif choice == 2:
-                pass
+                examples.selecting_features()
             elif choice == 3:
-                pass
+                examples.find_best_params()
             elif choice == 4:
+                pass
+            elif choice == 5:
+                pass
+            elif choice == 6:
                 pass
             else:
                 print("\nPlease enter a valid choice!")
