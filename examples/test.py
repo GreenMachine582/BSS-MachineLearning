@@ -56,6 +56,21 @@ def exploratoryDataAnalysis(dataset):
     plt.figure()
     sn.heatmap(df.corr(), annot=True)
 
+    # plots a line graph of BSS Demand vs Date
+    plt.figure()
+    plt.plot(df.index, df['cnt'])
+    plt.title('BSS Demand Vs Datetime')
+    plt.xlabel('Datetime')
+    plt.ylabel('Cnt')
+
+    # TODO: Add graphs
+    # a) Bar graph - Demand vs temperature/weatheris (2 seperate graphs)
+    # b) Box plots - Demand vs season/holiday/weekday/workingday (so 4 seperate box plots)
+    # Work here @Noel and keep the plt.show at end of function
+
+
+    plt.show()  # displays all figures
+
 
 def extractFeatures(config, dataset):
     logging.info("Extracting features")
@@ -103,7 +118,7 @@ def compareModels(x_train, y_train):
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
     models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
-    models.append(('GBR', GradientBoostingRegressor()))
+    models.append(('GBR', GradientBoostingRegressor(learning_rate=0.04, max_depth=2, n_estimators=1000, subsample=0.1)))
     # models.append(('AC', AgglomerativeClustering(n_clusters=4)))
     # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
 
@@ -123,17 +138,14 @@ def compareModels(x_train, y_train):
 
 def trainModel(x_train, y_train):
     model = GradientBoostingRegressor()
-    param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04, 0.05],
-                    'max_depth': [2, 3, 4, 6, 8, 10, 12],
-                    'n_estimators': [100, 300, 500, 700, 1000, 1500, 2000],
-                    'subsample': [0.9, 0.5, 0.2, 0.1, 0.08, 0.06]}
+    param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04],
+                    'max_depth': [2, 4, 6, 8, 10, 12],
+                    'n_estimators': [100, 500, 700, 1000, 1500],
+                    'subsample': [0.9, 0.5, 0.2, 0.1]}
     tscv = TimeSeriesSplit(n_splits=10)
-    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=-1)
+    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring='r2', n_jobs=-1, verbose=2)
     gsearch.fit(x_train, y_train)
-    best_model = gsearch.best_estimator_
-    best_score = gsearch.best_score_
-    best_params = gsearch.best_params_
-    return best_model, best_score, best_params
+    return gsearch.best_estimator_, gsearch.best_score_, gsearch.best_params_
 
 
 def main(dir_=local_dir):
@@ -149,19 +161,24 @@ def main(dir_=local_dir):
     exploratoryDataAnalysis(dataset)
 
     dataset, x, y = extractFeatures(config, dataset)
-    exploratoryDataAnalysis(dataset)
+
+    # plots a corresponding matrix
+    plt.figure()
+    sn.heatmap(dataset.df.corr(), annot=True)
 
     x_train, x_test, y_train, y_test = splitDataset(config, x, y)
 
     compareModels(x_train, y_train)
 
-    model, score, _ = trainModel(x_train, y_train)
+    plt.show()
+
+    model, score, params = trainModel(x_train, y_train)
+
+    print(params)
 
     model = BSS.Model(config, model=model)
     model.save()
     model.resultAnalysis(score, x_test, y_test)
-
-    plt.show()
 
     return
 

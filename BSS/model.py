@@ -12,16 +12,6 @@ from sklearn import metrics
 from BSS import utils, Config
 
 
-def rmse(actual, predict):
-    predict = np.array(predict)
-    actual = np.array(actual)
-    distance = predict - actual
-    square_distance = distance ** 2
-    mean_square_distance = square_distance.mean()
-    score = np.sqrt(mean_square_distance)
-    return score
-
-
 def regressionResults(y_test, y_pred):
     # Regression metrics
     results = []
@@ -98,12 +88,10 @@ class Model(object):
 
     def gridSearch(self, param_search, x_train, y_train, n_jobs=-1):
         logging.info("Grid Searching model hyperparameters")
-        # rmse_score = metrics.make_scorer(rmse, greater_is_better=False)
         tscv = TimeSeriesSplit(n_splits=10)
-        gsearch = GridSearchCV(estimator=self.model, cv=tscv, param_grid=param_search, n_jobs=n_jobs)
+        gsearch = GridSearchCV(estimator=self.model, cv=tscv, param_grid=param_search, n_jobs=n_jobs, verbose=2)
         gsearch.fit(x_train, y_train)
-        self.model = gsearch.best_estimator_
-        return gsearch.best_score_, gsearch.best_params_
+        return gsearch.best_estimator_, gsearch.best_score_, gsearch.best_params_
 
     def resultAnalysis(self, score, x_test, y_test):
         logging.info("Analysing results")
