@@ -194,8 +194,8 @@ def main(dir_: str = '') -> None:
     bike_london.handleMissingData()
 
     # updates the datasets with the processed dataset and accompanying name
-    bike_dc.update(df=bike_dc.df, name=bike_dc.name + '-processed')
-    bike_london.update(df=bike_london.df, name=bike_london.name + '-processed')
+    bike_dc.update(df=bike_dc.df, suffix='-processed')
+    bike_london.update(df=bike_london.df, suffix='-processed')
 
     # data consolidation
     consolidated_bike = dataConsolidation(bike_dc.df, bike_london.df)

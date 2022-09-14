@@ -6,8 +6,7 @@ import sys
 from time import time
 import warnings
 
-import examples
-
+import BSS
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -42,7 +41,7 @@ def main() -> None:
         print("""
         0 - Quit
         1 - Testing
-        2 - Feature selection
+        2 - Select Features
         3 - Find best params
         4 - Clustering (TBA)
         5 - Neural Network (TBA)
@@ -59,11 +58,11 @@ def main() -> None:
             if choice == 0:
                 return
             elif choice == 1:
-                examples.test.main()
+                BSS.test(ROOT_DIR)
             elif choice == 2:
-                examples.selecting_features()
+                BSS.select_features(ROOT_DIR)
             elif choice == 3:
-                examples.find_best_params()
+                BSS.find_best_params(ROOT_DIR)
             elif choice == 4:
                 pass
             elif choice == 5:

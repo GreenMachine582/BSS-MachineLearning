@@ -163,8 +163,7 @@ def plotPredictions(model, dataset, x_test):
 
 
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, dataset_name='Bike-Sharing-Dataset-day', model_technique='test',
-                        model_algorithm='all')
+    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
 
     dataset = BSS.Dataset(config)
 
@@ -180,7 +179,8 @@ def main(dir_=local_dir):
     plt.figure()
     sn.heatmap(dataset.df.corr(), annot=True)
 
-    x_train, x_test, y_train, y_test = splitDataset(config, x, y)
+    x_train, x_test = BSS.dataset.split(x, config.split_ratio)
+    y_train, y_test = BSS.dataset.split(y, config.split_ratio)
 
     compareModels(x_train, y_train)
 

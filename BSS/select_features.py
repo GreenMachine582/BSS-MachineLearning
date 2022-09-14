@@ -14,7 +14,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.neural_network import MLPRegressor
 
 import BSS
-from examples import test
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -69,8 +68,6 @@ def extractFeatures(config, dataset):
 
 
 def compareModels(x_train, y_train):
-    # TODO: separate the clustering techniques and apply appropriate prediction
-    #  and scoring methods
     logging.info("Training model")
     models, names, results = [], [], []
     models.append(('LR', LinearRegression()))
@@ -78,7 +75,7 @@ def compareModels(x_train, y_train):
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
     models.append(('GBR', GradientBoostingRegressor()))
 
-    scores = np.zeros((4, 2))  # 4 for four active models in compareModels
+    scores = np.zeros((len(models), 2))
     i = 0
     for name, model in models:
         tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
@@ -98,33 +95,34 @@ def compareModels(x_train, y_train):
 
 
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, dataset_name='Bike-Sharing-Dataset-day', model_technique='test',
-                        model_algorithm='all')
+    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
 
     dataset = BSS.Dataset(config)
     if not dataset.load():
         logging.error("Couldn't load a dataset")
+
     dataset = processData(config, dataset)
 
     # edit these values
     num_of_runs = 5
-    selected_features = [[], ['season'], ['yr'], ['mnth'], ['holiday'], ['weekday'], ['workingday'],
-                         ['season', 'mnth'], ['weekday', 'workingday']]
+    unselected_features = [[], ['season'], ['yr'], ['mnth'], ['holiday'], ['weekday'], ['workingday'],
+                           ['season', 'mnth'], ['weekday', 'workingday']]
 
     results = []
-    for features in selected_features:
+    for features in unselected_features:
         temp_dataset = deepcopy(dataset)
         temp_dataset.df = temp_dataset.df.drop(features, axis=1)
         temp_dataset, x, y = extractFeatures(config, temp_dataset)
-        x_train, x_test, y_train, y_test = test.splitDataset(config, x, y)
+        x_train, x_test = BSS.dataset.split(x, config.split_ratio)
+        y_train, y_test = BSS.dataset.split(y, config.split_ratio)
 
-        scores = np.zeros((4, 2))  # 4 for four active models in compareModels
+        scores = np.zeros(2)
         for i in range(num_of_runs):
             scores = np.add(scores, compareModels(x_train, y_train))
         scores = scores / num_of_runs  # average scores
         results.append(scores)
 
-    for features, scores in zip(selected_features, results):
+    for features, scores in zip(unselected_features, results):
         print(features)
         print(scores)
 
