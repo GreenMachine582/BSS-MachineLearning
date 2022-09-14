@@ -2,14 +2,10 @@
 log.txt
 .idea
 venv
-/venv
-/examples/configs/*
-/examples/models/*
-/examples/__pycache__/
-/BSS/VERSION
-/BSS/__pycache__/
-/Jupiter Notebooks/*.ipynb
-/Jupiter Notebooks/.ipynb_checkpoints
+configs/*
+models/*
+Jupiter Notebooks/*
+BSS/__pycache__/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
