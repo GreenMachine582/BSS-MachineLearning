@@ -4,9 +4,10 @@ import logging
 import os
 
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.svm import SVR
 
 import BSS
-from examples import test
+from BSS import test
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -20,9 +21,17 @@ def getGradientBoostingRegressor():
     return GradientBoostingRegressor(), param_search
 
 
+def getSVR():
+    param_search = {'kernel': ('linear', 'poly', 'rbf', 'sigmoid'),
+                    'C': [1, 5, 10],
+                    'degree': [3, 8],
+                    'coef0': [0.01, 10, 0.5],
+                    'gamma': ('auto', 'scale')},
+    return SVR(), param_search
+
+
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, dataset_name='Bike-Sharing-Dataset-day', model_technique='test',
-                        model_algorithm='all')
+    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
 
     dataset = BSS.Dataset(config)
     if not dataset.load():
@@ -30,12 +39,15 @@ def main(dir_=local_dir):
 
     dataset = test.processData(config, dataset)
     dataset, x, y = test.extractFeatures(config, dataset)
-    x_train, x_test, y_train, y_test = test.splitDataset(config, x, y)
+
+    x_train, x_test = BSS.dataset.split(x, config.split_ratio)
+    y_train, y_test = BSS.dataset.split(y, config.split_ratio)
 
     while True:
         print("""
         0 - Back
         1 - Gradient Boosting Regressor
+        2 - SVR
         """)
         choice = input("Which question number: ")
         try:
@@ -49,6 +61,9 @@ def main(dir_=local_dir):
                 return
             elif choice == 1:
                 model, param_search = getGradientBoostingRegressor()
+                break
+            elif choice == 2:
+                model, param_search = getSVR()
                 break
             else:
                 print("\nPlease enter a valid choice!")
