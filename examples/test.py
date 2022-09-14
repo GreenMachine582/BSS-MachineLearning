@@ -64,9 +64,11 @@ def exploratoryDataAnalysis(dataset):
     plt.ylabel('Cnt')
 
     # TODO: Add graphs
-    # a) Bar graph - Demand vs temperature/weatheris (2 seperate graphs)
-    # b) Box plots - Demand vs season/holiday/weekday/workingday (so 4 seperate box plots)
-    # Work here @Noel and keep the plt.show at end of function
+    #  a) Bar graph - Demand vs temperature/weatheris (2 separate graphs)
+    #  b) Box plots - Demand vs season/holiday/weekday/workingday (so 4 separate box plots)
+
+    ### Write code below here ###
+
 
 
     plt.show()  # displays all figures
@@ -138,14 +140,26 @@ def compareModels(x_train, y_train):
 
 def trainModel(x_train, y_train):
     model = GradientBoostingRegressor()
-    param_search = {'learning_rate': [0.01, 0.02, 0.03, 0.04],
-                    'max_depth': [2, 4, 6, 8, 10, 12],
-                    'n_estimators': [100, 500, 700, 1000, 1500],
-                    'subsample': [0.9, 0.5, 0.2, 0.1]}
+    param_search = {'learning_rate': [0.04],
+                    'max_depth': [2],
+                    'n_estimators': [1000],
+                    'subsample': [0.1]}
     tscv = TimeSeriesSplit(n_splits=10)
     gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring='r2', n_jobs=-1, verbose=2)
     gsearch.fit(x_train, y_train)
     return gsearch.best_estimator_, gsearch.best_score_, gsearch.best_params_
+
+
+def plotPredictions(model, dataset, x_test):
+    # plots a line graph of BSS True and Predicted Demand vs Date
+    predicted_demand = model.model.predict(x_test)
+    plt.figure()
+    plt.plot(dataset.df.index, dataset.df['cnt'], color='blue')
+    plt.plot(x_test.index, predicted_demand, color='red')
+    plt.title('BSS Demand Vs Datetime')
+    plt.xlabel('Datetime')
+    plt.ylabel('Cnt')
+    plt.show()
 
 
 def main(dir_=local_dir):
@@ -179,6 +193,8 @@ def main(dir_=local_dir):
     model = BSS.Model(config, model=model)
     model.save()
     model.resultAnalysis(score, x_test, y_test)
+
+    plotPredictions(model, dataset, x_test)
 
     return
 
