@@ -171,16 +171,16 @@ def main(dir_=local_dir):
         logging.error("Couldn't load a dataset")
 
     dataset = processData(config, dataset)
-    exploratoryDataAnalysis(dataset)
+    # exploratoryDataAnalysis(dataset)
 
     dataset, x, y = extractFeatures(config, dataset)
 
     # plots a corresponding matrix
-    plt.figure()
-    sn.heatmap(dataset.df.corr(), annot=True)
+    # plt.figure()
+    # sn.heatmap(dataset.df.corr(), annot=True)
 
-    x_train, x_test = BSS.dataset.split(x, config.split_ratio)
-    y_train, y_test = BSS.dataset.split(y, config.split_ratio)
+    x_train, x_test, y_train, y_test = BSS.dataset.split([x, y], config.split_ratio)
+    # y_train, y_test = BSS.dataset.split(y, config.split_ratio)
 
     compareModels(x_train, y_train)
 

@@ -78,19 +78,22 @@ def save(dir_: str, name: str, df: DataFrame, suffix: str = '', extension: str =
     df.to_csv(path, sep=seperator, index=False)
 
 
-def split(df: DataFrame, split_ratio: float) -> tuple:
+def split(df: DataFrame | list | tuple, split_ratio: float) -> tuple:
     """
     Splits the dataset into two smaller datasets with given ratio.
-    :param df: DataFrame
+    :param df: DataFrame | list[DataFrame] | tuple[DataFrame]
     :param split_ratio: float
     :return:
-        - train, test - tuple[DataFrame]
+        - split_df - tuple[DataFrame]
     """
     logging.info("Splitting dataset")
-    size = round(df.shape[0] * split_ratio)
-    train = df[:size]
-    test = df[size:]
-    return train, test
+    split_df = []
+    for x in df:
+        size = round(x.shape[0] * split_ratio)
+        split_df.append(x[:size])
+        split_df.append(x[size:])
+
+    return tuple(split_df)
 
 
 def handleMissingData(df: DataFrame, name: str, suffix: str = '', fill: bool = True) -> DataFrame:
