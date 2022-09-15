@@ -35,17 +35,18 @@ class Config(object):
         if self.name and not self.load():
             self.save()
 
-    def update(self, **kwargs: Any | dict) -> None:
+    def update(self, **kwargs: Any) -> None:
         """
         Updates the class attributes with given keys and values.
-        :param kwargs: Any | dict[str: Any]
+        :param kwargs: dict[str: Any]
         :return:
             - None
         """
-        logging.info("Updating attributes")
         if 'kwargs' in kwargs and isinstance(kwargs['kwargs'], dict):
             kwargs = kwargs['kwargs']
 
+        name = self.name if 'name' not in kwargs else kwargs['name']
+        logging.info(f"Updating '{name}' dataset attributes")
         for key, value in kwargs.items():
             setattr(self, key, value)
 
