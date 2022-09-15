@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import json
 import logging
-import os
 from typing import Any
 
 from BSS import utils
@@ -53,20 +51,15 @@ class Config(object):
 
     def load(self) -> bool:
         """
-        Attempts to load the config file using json.
+        Loads the config file and updates the object attributes.
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.config_dir}\\{self.name}{self.suffix}", self.config_extension)
-
-        if exist:
-            logging.info(f"Loading config {path}")
-            with open(path, 'r', encoding='utf-8') as f:
-                self.update(**json.load(f))
-            return True
-        else:
-            logging.warning(f"Missing file '{path}'")
-        return False
+        data = utils.load(self.config_dir, self.name + self.suffix, self.config_extension)
+        if data is None:
+            return False
+        self.update(**data)
+        return True
 
     def save(self) -> bool:
         """
@@ -75,11 +68,4 @@ class Config(object):
         :return:
             - completed - bool
         """
-        if not utils.checkPath(self.config_dir):
-            os.makedirs(self.config_dir)
-        path, _ = utils.checkPath(f"{self.config_dir}\\{self.name}{self.suffix}", self.config_extension)
-
-        logging.info(f"Saving file '{path}'")
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(self.__dict__, f, indent=4)
-        return True
+        return utils.save(self.config_dir, self.name + self.suffix, self.__dict__, self.config_extension)

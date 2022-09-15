@@ -12,6 +12,14 @@ from sklearn import metrics
 from BSS import utils, Config
 
 
+def gridSearch(model, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
+    logging.info("Grid Searching model hyperparameters")
+    tscv = TimeSeriesSplit(n_splits=n_split)
+    grid_search = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=n_jobs, verbose=verbose)
+    grid_search.fit(x_train, y_train)
+    return grid_search
+
+
 def regressionResults(y_test, y_pred):
     # Regression metrics
     results = []
@@ -27,6 +35,19 @@ def regressionResults(y_test, y_pred):
     results.append(('MAE:', round(mae, 4)))
     results.append(('MSE:', round(mse, 4)))
     results.append(('RMSE:', round(np.sqrt(mse), 4)))
+    return results
+
+
+def resultAnalysis(model, score, x_test, y_test):
+    logging.info("Analysing results")
+
+    print("Score - %.4f%s" % (score * 100, "%"))
+
+    y_pred = model.predict(x_test)
+
+    results = regressionResults(y_test, y_pred)
+    for name, result in results:
+        print(name, result)
     return results
 
 
@@ -61,47 +82,26 @@ class Model(object):
 
     def load(self) -> bool:
         """
-        Loads the model by deserialising a model file.
+        Loads and updates the model.
         :return:
             - completed - bool
         """
-        path, exist = utils.checkPath(f"{self.dir_}\\{self.name}{self.suffix}", self.extension)
-        if exist:
-            logging.info(f"Loading model '{path}'")
-            self.model = pickle.load(open(path, "rb"))
-            return True
-        else:
-            logging.warning(f"Missing file '{path}'")
-        return False
+        self.model = utils.load(self.dir_, self.name + self.suffix, self.extension)
+        if self.model is None:
+            return False
+        return True
 
-    def save(self) -> None:
+    def save(self) -> bool:
         """
-        Saves the model by serialising the model object.
+        Saves the model.
         :return:
-            - None
+            - completed - bool
         """
-        if not utils.checkPath(self.dir_):
-            os.makedirs(self.dir_)
-        path, _ = utils.checkPath(f"{self.dir_}\\{self.name}{self.suffix}", self.extension)
+        return utils.save(self.dir_, self.name + self.suffix, self.model, self.extension)
 
-        logging.info(f"Saving file '{path}'")
-        pickle.dump(self.model, open(path, "wb"))
-
-    def gridSearch(self, param_search, x_train, y_train, n_jobs=-1):
-        logging.info("Grid Searching model hyperparameters")
-        tscv = TimeSeriesSplit(n_splits=10)
-        gsearch = GridSearchCV(estimator=self.model, cv=tscv, param_grid=param_search, n_jobs=n_jobs, verbose=2)
-        gsearch.fit(x_train, y_train)
-        return gsearch.best_estimator_, gsearch.best_score_, gsearch.best_params_
+    def gridSearch(self, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
+        grid_search = gridSearch(self.model, param_search, x_train, y_train, n_split, n_jobs, verbose)
+        return grid_search.best_estimator_, grid_search.best_score_, grid_search.best_params_
 
     def resultAnalysis(self, score, x_test, y_test):
-        logging.info("Analysing results")
-
-        print("Score - %.4f%s" % (score * 100, "%"))
-
-        y_pred = self.model.predict(x_test)
-
-        results = regressionResults(y_test, y_pred)
-        for name, result in results:
-            print(name, result)
-        return results
+        return resultAnalysis(self.model, score, x_test, y_test)
