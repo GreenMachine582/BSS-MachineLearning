@@ -7,47 +7,51 @@ import pickle
 from typing import Any
 
 
-def joinExtension(path_: str, extension: str) -> str:
+def checkPath(*args, extension: str = '') -> tuple:
     """
-    Adds an extension if not already included in path.
-    :param path_: str
+    Joins the paths together, adds an extension if not already included in path,
+    then checks if path exists.
+    :param args: tuple[str]
     :param extension: str
     :return:
-        - path - str
+        - path_, exist - tuple[str, bool]
     """
+    path_ = joinPath(*list(args), extension=extension)
+    exist = True if os.path.exists(path_) else False
+    return path_, exist
+
+
+def joinPath(*args, extension: str = '') -> str:
+    """
+    Joins the paths together, adds an extension if not already included in path,.
+    :param args: tuple[str]
+    :param extension: str
+    :return:
+        - path_ - str
+    """
+    path_ = os.path.join(*list(args))
+
     if os.path.splitext(path_)[1] != extension:
         path_ = path_ + extension
     return path_
 
 
-def checkPath(path_: str, extension: str = '') -> bool | tuple:
-    """
-    Adds an extension if not already included in path, then checks if path exists.
-    :param path_: str
-    :param extension: str
-    :return:
-        - path_, exist - tuple[str, bool]
-        - exist - bool
-    """
-    if extension:
-        path_ = joinExtension(path_, extension)
-
-    exist = True if os.path.exists(path_) else False
-
-    if extension:
-        return path_, exist
-    return exist
+def makePath(*args) -> str:
+    path_, exist = checkPath(*list(args))
+    if not exist:
+        os.makedirs(path_)
+    return path_
 
 
-def load(dir_, name, extension) -> dict | object | None:
+def load(dir_: str, name: str, extension: str) -> Any | None:
     """
     Loads the data with appropriate method. Pickle will deserialise the contents
     of the file and json will load the contents.
     :return:
-        - data - dict | object | None
+        - data - Any | None
     """
     data = None
-    path_, exist = checkPath(f"{dir_}\\{name}", extension)
+    path_, exist = checkPath(dir_, name, extension=extension)
     if exist:
         logging.info(f"Loading model '{path_}'")
         try:
@@ -74,9 +78,8 @@ def save(dir_: str, name: str, data: Any | object, extension: str, indent: int =
     :param extension: str
     :param indent: int
     """
-    if not checkPath(dir_):
-        os.makedirs(dir_)
-    path_, _ = checkPath(f"{dir_}\\{name}", extension)
+    makePath(dir_)
+    path_ = joinPath(dir_, name, extension=extension)
 
     logging.info(f"Saving file '{path_}'")
     try:
