@@ -12,7 +12,7 @@ from sklearn.utils import Bunch
 from BSS import utils, Config
 
 
-def bunchToDataframe(fetched_df: Bunch, target: str) -> DataFrame:
+def bunchToDataframe(fetched_df: Bunch, target: str = 'target') -> DataFrame:
     """
     Creates a pandas DataFrame dataset from the SKLearn Bunch object.
     :param fetched_df: Bunch
@@ -42,9 +42,9 @@ def load(dir_: str, name: str, feature_names, target: str = 'target', suffix: st
     :return:
         - df - DataFrame | None
     """
-    path, exist = utils.checkPath(f"{dir_}\\{name}{suffix}", extension)
+    path_, exist = utils.checkPath(dir_, name + suffix, extension=extension)
     if not exist:
-        logging.warning(f"Missing file '{path}'")
+        logging.warning(f"Missing file '{path_}'")
         logging.info("Fetching dataset from openml")
         try:
             fetched_dataset = fetch_openml(name, version=1)
@@ -52,63 +52,67 @@ def load(dir_: str, name: str, feature_names, target: str = 'target', suffix: st
             logging.warning(e)
             return None
         df = bunchToDataframe(fetched_dataset, target)
-        save(dir_, name, df, suffix, extension, seperator)
-    logging.info(f"Loading dataset '{path}'")
-    df = pd.read_csv(path, names=feature_names, sep=seperator)
+        save(dir_, name + suffix, df, extension, seperator)
+    logging.info(f"Loading dataset '{path_}'")
+    df = pd.read_csv(path_, names=feature_names, sep=seperator)
     return df
 
 
-def save(dir_: str, name: str, df: DataFrame, suffix: str = '', extension: str = '.csv', seperator: str = ',') -> None:
+def save(dir_: str, name: str, df: DataFrame, extension: str = '.csv', seperator: str = ',') -> bool:
     """
     Saves the dataset to a csv file using pandas.
     :param dir_: str
     :param name: str
     :param df: DataFrame
-    :param suffix: str
     :param extension: str
     :param seperator: str
     :return:
-        - None
+        - completed - bool
     """
-    if not utils.checkPath(dir_):
-        os.makedirs(dir_)
-    path = utils.joinExtension(f"{dir_}\\{name}{suffix}", extension)
+    utils.makePath(dir_)
+    path_ = utils.joinPath(dir_, name, extension=extension)
 
-    logging.info(f"Saving file '{path}'")
-    df.to_csv(path, sep=seperator, index=False)
+    logging.info(f"Saving file '{path_}'")
+    try:
+        df.to_csv(path_, sep=seperator, index=False)
+    except Exception as e:
+        logging.warning(e)
+        return False
+    return True
 
 
-def split(df: DataFrame | list | tuple, split_ratio: float) -> tuple:
+def split(*args, split_ratio: float = 0.8) -> tuple:
     """
-    Splits the dataset into two smaller datasets with given ratio.
-    :param df: DataFrame | list[DataFrame] | tuple[DataFrame]
+    Splits the datasets into two smaller datasets with given ratio.
+    :param args: tuple[DataFrame]
     :param split_ratio: float
     :return:
         - split_df - tuple[DataFrame]
     """
     logging.info("Splitting dataset")
     split_df = []
-    for x in df:
-        size = round(x.shape[0] * split_ratio)
-        split_df.append(x[:size])
-        split_df.append(x[size:])
-
+    for df in args:
+        size = round(df.shape[0] * split_ratio)
+        split_df.append(df[:size])
+        split_df.append(df[size:])
     return tuple(split_df)
 
 
-def handleMissingData(df: DataFrame, name: str, suffix: str = '', fill: bool = True) -> DataFrame:
+def handleMissingData(df: DataFrame, name: str, fill: bool = True) -> DataFrame | None:
     """
     Handles missing values by forward and backward value filling, this is a common
     strategy for datasets with time series. Instances with remaining missing values
     will be dropped.
     :param df: DataFrame
     :param name: str
-    :param suffix: str
     :param fill: bool
     :return:
-        - df - DataFrame
+        - df - DataFrame | None
     """
-    logging.info(f"Handling missing values for '{name}{suffix}'")
+    logging.info(f"Handling missing values for '{name}'")
+    if df is None:
+        return None
+
     missing_sum = df.isnull().sum()
     if missing_sum.sum() > 0:
         if fill:
@@ -128,10 +132,12 @@ class Dataset(object):
 
         self.df = None
 
-        self.dir_ = self.config.working_dir + '\\datasets'
-        self.name = self.config.name
+        self.dir_ = config.working_dir + '\\datasets'
+        self.name = config.name
         self.suffix = ''
+
         self.extension = '.csv'
+        self.seperator = config.seperator
 
         self.update(**kwargs)
 
@@ -157,26 +163,26 @@ class Dataset(object):
             completed - bool
         """
         self.df = load(self.dir_, self.name, self.config.names, self.config.target, self.suffix, self.extension,
-                       self.config.seperator)
+                       self.seperator)
         if self.df is None:
             return False
         return True
 
-    def save(self) -> None:
+    def save(self) -> bool:
         """
         Saves the dataset.
         :return:
-            - None
+            - completed - bool
         """
-        save(self.dir_, self.name, self.df, self.suffix, self.extension, self.config.seperator)
+        return save(self.dir_, self.name + self.suffix, self.df, self.extension, self.seperator)
 
     def split(self) -> tuple:
         """
-        Splits the dataset in two smaller datasets.
+        Splits the dataset into train and test datasets.
         :return:
             train, test - tuple[DataFrame]
         """
-        return split(self.df, self.config.split_ratio)
+        return split(self.df, split_ratio=self.config.split_ratio)
 
     def handleMissingData(self, fill: bool = True) -> None:
         """
@@ -185,4 +191,4 @@ class Dataset(object):
         :return:
             - None
         """
-        self.df = handleMissingData(self.df, self.name, self.suffix, fill)
+        self.df = handleMissingData(self.df, self.name + self.suffix, fill)
