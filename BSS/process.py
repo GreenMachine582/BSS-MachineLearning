@@ -22,6 +22,7 @@ def preProcess(df: DataFrame, location: str = '') -> DataFrame | None:
         - df - DataFrame | None
     """
     logging.info("Pre-Processing data")
+    # TODO: Normalise values
     if df is None:
         logging.warning(f"'DataFrame' object was expected, got {type(df)}")
         return

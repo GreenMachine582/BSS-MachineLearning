@@ -7,7 +7,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.svm import SVR
 
 import BSS
-from BSS import test
+from .process import preProcess, processData
+from .test import extractFeatures
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -34,14 +35,19 @@ def main(dir_=local_dir):
     config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
 
     dataset = BSS.Dataset(config)
-    if not dataset.load():
-        logging.error("Couldn't load a dataset")
+    # Checks if BSS dataset was loaded
+    if dataset.df is None:
+        logging.warning("Dataset is a NoneType")
+        return
 
-    dataset = test.processData(config, dataset)
-    dataset, x, y = test.extractFeatures(config, dataset)
+    # Pre-process the dataset
+    dataset.apply(BSS.process.preProcess, 'London')
+    dataset.apply(BSS.process.processData)
+    dataset = extractFeatures(config, dataset)
 
-    x_train, x_test = BSS.dataset.split(x, config.split_ratio)
-    y_train, y_test = BSS.dataset.split(y, config.split_ratio)
+    x, y = dataset.split()
+
+    logging.info('Selecting model')
 
     while True:
         print("""
@@ -70,14 +76,14 @@ def main(dir_=local_dir):
 
     model = BSS.Model(config, model=model)
 
-    best_estimator, best_score, best_params = model.gridSearch(param_search, x_train, y_train)
+    best_estimator, best_score, best_params = model.gridSearch(param_search, x['train'], y['train'])
 
     print('The best estimator:', best_estimator)
     print('The best score:', best_score)
     print('The best params:', best_params)
     model.update(model=best_estimator)
 
-    results = model.resultAnalysis(best_score, x_test, y_test)
+    results = model.resultAnalysis(best_score, x['test'], y['test'])
     print(results)
 
 

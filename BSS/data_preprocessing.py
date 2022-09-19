@@ -11,6 +11,7 @@ so this document is only applicable to the data given in /examples/datasets
 __author__ = "Yuki"
 __date__ = "08/09/2022"
 
+import logging
 import os
 
 from pandas import DataFrame
@@ -45,6 +46,7 @@ def dataConsolidation(df_dc, df_london):
     cnt | cnt | cnt |
     rate | cnt | cnt |
     """
+    logging.info('Consolidating datasets')
     # list of attributes
     alist = ["rate", "cnt", "city", "weather", "wind_speed", "t2", "t1", "hum", "is_workingday", "is_weekend",
              "is_holiday", "hour", "day", "month", "season"]
@@ -171,19 +173,15 @@ def dataConsolidation(df_dc, df_london):
     # merge rate
     d["rate"] = [x / 60 for x in df_dc["cnt"].values.tolist()] + [x / 875 for x in df_london["cnt"].values.tolist()]
 
-    # build the dataframe from the dictionary
-    df_new = DataFrame(d)
-
     print("Datasets consolidated")
-    print("\n")
-    return df_new
+    return DataFrame(d)
 
 
 def main(dir_: str = '') -> None:
     config = BSS.Config(dir_)
     # Bike-Sharing-Dataset-hour is a detailed version of Bike-Sharing-Dataset-day, it will be used in process
     bike_dc = BSS.Dataset(config, name='Bike-Sharing-Dataset-hour')
-    bike_london = BSS.Dataset(config, name='london-merged-day')
+    bike_london = BSS.Dataset(config, name='london-merged-hour')
 
     # loads the datasets
     bike_dc.load()
@@ -193,25 +191,22 @@ def main(dir_: str = '') -> None:
     bike_dc.handleMissingData()
     bike_london.handleMissingData()
 
-    # updates the datasets with the processed dataset and accompanying name
-    bike_dc.update(df=bike_dc.df, suffix='-processed')
-    bike_london.update(df=bike_london.df, suffix='-processed')
+    # updates and saves the datasets with accompanying names
+    bike_dc.update(suffix='-processed')
+    bike_dc.save()
+    bike_london.update(suffix='-processed')
+    bike_london.save()
 
     # data consolidation
     consolidated_bike = dataConsolidation(bike_dc.df, bike_london.df)
-    bike = BSS.Dataset(config, df=consolidated_bike, name='bike-consolidated')
-
-    # feature pre-selection
-    # the pre-selection can only remove the attributes which are totally depend on other attributes.
-    pre_selected_bike = bike.df.copy()
-    pre_selected_bike.drop(["season", "is_workingday"], axis=1, inplace=True)
-    selected = BSS.Dataset(config, df=pre_selected_bike, name="bike-pre-selected")
-
-    # saves the processed datasets
-    bike_dc.save()
-    bike_london.save()
+    bike = BSS.Dataset(config, df=consolidated_bike, name='bike', suffix='-consolidated')
     bike.save()
-    selected.save()
+
+    # feature selection
+    # the selection can only remove the attributes which are totally depend on other attributes.
+    bike.df.drop(["season", "is_workingday"], axis=1, inplace=True)
+    bike.update(suffix='-selected')
+    bike.save()
 
 
 if __name__ == '__main__':

@@ -10,10 +10,11 @@ from sklearn import metrics
 from BSS import utils, Config
 
 
-def gridSearch(model, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
+def gridSearch(model, param_search, x_train, y_train, n_split=10, scoring='r2', n_jobs=-1, verbose=2):
     logging.info("Grid Searching model hyperparameters")
     tscv = TimeSeriesSplit(n_splits=n_split)
-    grid_search = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=n_jobs, verbose=verbose)
+    grid_search = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring=scoring, n_jobs=n_jobs,
+                               verbose=verbose)
     grid_search.fit(x_train, y_train)
     return grid_search
 
@@ -42,6 +43,8 @@ def resultAnalysis(model, score, x_test, y_test):
     print("Score - %.4f%s" % (score * 100, "%"))
 
     y_pred = model.predict(x_test)
+
+    y_pred[y_pred < 0] = 0
 
     results = regressionResults(y_test, y_pred)
     for name, result in results:
@@ -76,7 +79,10 @@ class Model(object):
         name = self.name if 'name' not in kwargs else kwargs['name']
         logging.info(f"Updating '{name}' model attributes")
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                logging.warning(f"No such attribute, '{key}'")
 
     def load(self) -> bool:
         """
@@ -98,7 +104,8 @@ class Model(object):
         return utils.save(self.dir_, self.name + self.suffix, self.model, self.extension)
 
     def gridSearch(self, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
-        grid_search = gridSearch(self.model, param_search, x_train, y_train, n_split, n_jobs, verbose)
+        grid_search = gridSearch(self.model, param_search, x_train, y_train, n_split=n_split, n_jobs=n_jobs,
+                                 verbose=verbose)
         return grid_search.best_estimator_, grid_search.best_score_, grid_search.best_params_
 
     def resultAnalysis(self, score, x_test, y_test):
