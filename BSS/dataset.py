@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
-from typing import Any
 
 import pandas as pd
 from pandas import DataFrame
@@ -21,12 +19,12 @@ def bunchToDataframe(fetched_df: Bunch, target: str = 'target') -> DataFrame:
         - df - DataFrame
     """
     logging.info("Converting Bunch to DataFrame")
-    df = pd.DataFrame(data=fetched_df["data"], columns=fetched_df["feature_names"])
-    df[target] = fetched_df["target"]
+    df = pd.DataFrame(data=fetched_df['data'], columns=fetched_df['feature_names'])
+    df[target] = fetched_df['target']
     return df
 
 
-def load(dir_: str, name: str, feature_names, target: str = 'target', suffix: str = '', extension: str = '.csv',
+def load(dir_: str, name: str, feature_names: list, target: str = 'target', suffix: str = '', extension: str = '.csv',
          seperator: str = ',') -> DataFrame | None:
     """
     Checks and loads a locally stored .csv dataset as a pandas DataFrame. If dataset
@@ -50,7 +48,7 @@ def load(dir_: str, name: str, feature_names, target: str = 'target', suffix: st
             fetched_dataset = fetch_openml(name, version=1)
         except Exception as e:
             logging.warning(e)
-            return None
+            return
         df = bunchToDataframe(fetched_dataset, target)
         save(dir_, name + suffix, df, extension, seperator)
     logging.info(f"Loading dataset '{path_}'")
@@ -87,31 +85,30 @@ def split(*args, split_ratio: float = 0.8) -> tuple:
     :param args: tuple[DataFrame]
     :param split_ratio: float
     :return:
-        - split_df - tuple[DataFrame]
+        - split_df - tuple[dict[str: DataFrame]]
     """
     logging.info("Splitting dataset")
     split_df = []
     for df in args:
         size = round(df.shape[0] * split_ratio)
-        split_df.append(df[:size])
-        split_df.append(df[size:])
+        split_df.append({'train': df[:size], 'test': df[size:]})
     return tuple(split_df)
 
 
-def handleMissingData(df: DataFrame, name: str, fill: bool = True) -> DataFrame | None:
+def handleMissingData(df: DataFrame, fill: bool = True) -> DataFrame | None:
     """
     Handles missing values by forward and backward value filling, this is a common
     strategy for datasets with time series. Instances with remaining missing values
     will be dropped.
     :param df: DataFrame
-    :param name: str
     :param fill: bool
     :return:
         - df - DataFrame | None
     """
-    logging.info(f"Handling missing values for '{name}'")
+    logging.info(f"Handling missing values")
     if df is None:
-        return None
+        logging.warning(f"'DataFrame' object was expected, got {type(df)}")
+        return
 
     missing_sum = df.isnull().sum()
     if missing_sum.sum() > 0:
@@ -127,24 +124,30 @@ def handleMissingData(df: DataFrame, name: str, fill: bool = True) -> DataFrame 
 
 class Dataset(object):
 
-    def __init__(self, config: Config, **kwargs: Any | dict):
+    def __init__(self, config: Config, **kwargs):
         self.config = config
 
         self.df = None
 
         self.dir_ = config.working_dir + '\\datasets'
         self.name = config.name
-        self.suffix = ''
+        self.suffix = config.suffix
 
         self.extension = '.csv'
         self.seperator = config.seperator
+        self.feature_names = config.names
+        self.target = config.target
+        self.split_ratio = config.split_ratio
 
         self.update(**kwargs)
 
-    def update(self, **kwargs: Any | dict) -> None:
+        if self.df is None:
+            if not self.load():
+                logging.error("Couldn't load the dataset")
+
+    def update(self, **kwargs) -> None:
         """
         Updates the class attributes with given keys and values.
-        :param kwargs: Any | dict[str: Any]
         :return:
             - None
         """
@@ -154,7 +157,10 @@ class Dataset(object):
         name = self.name if 'name' not in kwargs else kwargs['name']
         logging.info(f"Updating '{name}' dataset attributes")
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                logging.warning(f"No such attribute, '{key}'")
 
     def load(self) -> bool:
         """
@@ -162,7 +168,7 @@ class Dataset(object):
         :return:
             completed - bool
         """
-        self.df = load(self.dir_, self.name, self.config.names, self.config.target, self.suffix, self.extension,
+        self.df = load(self.dir_, self.name, self.feature_names, self.target, self.suffix, self.extension,
                        self.seperator)
         if self.df is None:
             return False
@@ -176,13 +182,29 @@ class Dataset(object):
         """
         return save(self.dir_, self.name + self.suffix, self.df, self.extension, self.seperator)
 
+    def apply(self, handler: object | callable, *args, **kwargs) -> None:
+        """
+        Applies the given handler to the dataset with given arguments.
+        :param handler: object | callable
+        :return:
+            - None
+        """
+        if callable(handler):
+            df = handler(self.df, *args, **kwargs)
+            if isinstance(df, DataFrame):
+                self.df = df
+            else:
+                logging.warning(f"DataFrame object was expected, got '{type(df)}'")
+
     def split(self) -> tuple:
         """
         Splits the dataset into train and test datasets.
         :return:
-            train, test - tuple[DataFrame]
+            train, test - tuple[dict[str: DataFrame]]
         """
-        return split(self.df, split_ratio=self.config.split_ratio)
+        x = self.df.drop(self.target, axis=1)  # denotes independent features
+        y = self.df[self.target]  # denotes dependent variables
+        return split(x, y, split_ratio=self.split_ratio)
 
     def handleMissingData(self, fill: bool = True) -> None:
         """
@@ -191,4 +213,4 @@ class Dataset(object):
         :return:
             - None
         """
-        self.df = handleMissingData(self.df, self.name + self.suffix, fill)
+        self.df = handleMissingData(self.df, fill)
