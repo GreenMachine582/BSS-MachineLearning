@@ -41,11 +41,13 @@ def main() -> None:
         print("""
         0 - Quit
         1 - Testing
-        2 - Select Features
-        3 - Find best params
-        4 - Clustering (TBA)
-        5 - Neural Network (TBA)
-        6 - Regression (TBA)
+        2 - Data Pre-Processing
+        3 - Process Data
+        4 - Select Features
+        5 - Find best params
+        6 - Clustering (TBA)
+        7 - Neural Network (TBA)
+        8 - Regression (TBA)
         """)
         choice = input("Which question number: ")
         try:
@@ -58,16 +60,20 @@ def main() -> None:
             if choice == 0:
                 return
             elif choice == 1:
-                BSS.test(ROOT_DIR)
+                BSS.testMain(ROOT_DIR)
             elif choice == 2:
-                BSS.select_features(ROOT_DIR)
+                BSS.dataPreprocessing(ROOT_DIR)
             elif choice == 3:
-                BSS.find_best_params(ROOT_DIR)
+                BSS.processData(ROOT_DIR)
             elif choice == 4:
-                pass
+                BSS.selectFeatures(ROOT_DIR)
             elif choice == 5:
-                pass
+                BSS.findBestParams(ROOT_DIR)
             elif choice == 6:
+                pass
+            elif choice == 7:
+                pass
+            elif choice == 8:
                 pass
             else:
                 print("\nPlease enter a valid choice!")
