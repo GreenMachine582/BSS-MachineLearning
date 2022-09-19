@@ -3,12 +3,10 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sn
 
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score, GridSearchCV
-from sklearn import metrics
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.cluster import SpectralBiclustering, AgglomerativeClustering
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
@@ -20,32 +18,6 @@ import BSS
 
 # Constants
 local_dir = os.path.dirname(__file__)
-
-
-def processData(config, dataset):
-    logging.info("Processing data")
-    df = dataset.df
-
-    print(df.head())
-
-    df['dteday'] = pd.to_datetime(df['dteday'])
-    df.index = df['dteday']
-
-    df = df.drop(['instant', 'dteday', 'casual', 'registered'], axis=1)
-
-    dataset.update(df=df, suffix='-processed')
-    dataset.handleMissingData()
-
-    df = dataset.df
-
-    print(df.axes)
-    print(df.head())
-    print(df.dtypes)
-
-    x = df.drop(config.target, axis=1)  # denotes independent features
-    print("X shape:", x.shape)
-
-    return dataset
 
 
 def exploratoryDataAnalysis(dataset):
@@ -64,6 +36,8 @@ def exploratoryDataAnalysis(dataset):
     plt.ylabel('Cnt')
 
     # TODO: Add graphs
+    #   See the graphs on pg. 18 as reference.
+    #   https://www.researchgate.net/publication/337062461_Regression_Model_for_Bike-Sharing_Service_by_Using_Machine_Learning
     #  a) Bar graph - Demand vs temperature/weatheris (2 separate graphs)
     #  b) Box plots - Demand vs season/holiday/weekday/workingday (so 4 separate box plots)
 
@@ -78,13 +52,7 @@ def extractFeatures(config, dataset):
     logging.info("Extracting features")
     df = dataset.df
 
-    # adds some historical data
-    df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
-    df.loc[:, 'diff'] = df.loc[:, 'prev'].diff()
-    df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
-    df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
-
-    df = df.drop(['season', 'mnth'], axis=1)
+    df = df.drop(['yr', 'mnth'], axis=1)
 
     dataset.update(df=df, suffix='-extracted')
     dataset.handleMissingData()
@@ -95,32 +63,20 @@ def extractFeatures(config, dataset):
     print(x.head())
     print(y.head())
 
-    return dataset, x, y
-
-
-def splitDataset(config, x, y):
-    logging.info("Splitting data")
-
-    size = round(x.shape[0] * config.split_ratio)
-    x_train = x[:size]
-    y_train = y[:size]
-    x_test = x[size:]
-    y_test = y[size:]
-
-    return x_train, x_test, y_train, y_test
+    return dataset
 
 
 def compareModels(x_train, y_train):
     # TODO: separate the clustering techniques and apply appropriate prediction
     #  and scoring methods
-    logging.info("Training model")
+    logging.info("Comparing models")
     models, names, results = [], [], []
-    models.append(('LR', LinearRegression()))
+    # models.append(('LR', LinearRegression()))
     models.append(('NN', MLPRegressor(solver='lbfgs')))  # neural network
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
     models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
-    models.append(('GBR', GradientBoostingRegressor(learning_rate=0.04, max_depth=2, n_estimators=1000, subsample=0.1)))
+    models.append(('GBR', GradientBoostingRegressor()))
     # models.append(('AC', AgglomerativeClustering(n_clusters=4)))
     # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
 
@@ -132,22 +88,16 @@ def compareModels(x_train, y_train):
         names.append(name)
         print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
 
-    # Compare Algorithms
     plt.figure()
     plt.boxplot(results, labels=names)
     plt.title('Algorithm Comparison')
 
 
 def trainModel(x_train, y_train):
-    model = GradientBoostingRegressor()
-    param_search = {'learning_rate': [0.04],
-                    'max_depth': [2],
-                    'n_estimators': [1000],
-                    'subsample': [0.1]}
-    tscv = TimeSeriesSplit(n_splits=10)
-    gsearch = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, scoring='r2', n_jobs=-1, verbose=2)
-    gsearch.fit(x_train, y_train)
-    return gsearch.best_estimator_, gsearch.best_score_, gsearch.best_params_
+    logging.info("Training best model")
+    model = GradientBoostingRegressor(learning_rate=0.09, max_depth=6, n_estimators=600, subsample=0.12)
+    model.fit(x_train, y_train)
+    return model
 
 
 def plotPredictions(model, dataset, x_test):
@@ -163,37 +113,40 @@ def plotPredictions(model, dataset, x_test):
 
 
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
+    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day', suffix='-pre-processed')
 
     dataset = BSS.Dataset(config)
+    # Checks if BSS dataset was loaded
+    if dataset.df is None:
+        logging.warning(f"'DataFrame' object was expected, got {type(dataset.df)}")
+        return
 
-    if not dataset.load():
-        logging.error("Couldn't load a dataset")
+    # Process the dataset
+    dataset.apply(BSS.process.processData)
+    dataset.update(suffix='-processed')
 
-    dataset = processData(config, dataset)
     exploratoryDataAnalysis(dataset)
 
-    dataset, x, y = extractFeatures(config, dataset)
+    # dataset = extractFeatures(config, dataset)
+
+    x, y = dataset.split()
 
     # plots a corresponding matrix
     plt.figure()
     sn.heatmap(dataset.df.corr(), annot=True)
 
-    x_train, x_test, y_train, y_test = BSS.dataset.split(x, y, split_ratio=config.split_ratio)
-
-    compareModels(x_train, y_train)
+    compareModels(x['train'], y['train'])
 
     plt.show()
 
-    model, score, params = trainModel(x_train, y_train)
-
-    print(params)
+    model = trainModel(x['train'], y['train'])
+    score = model.score(x['test'], y['test'])
 
     model = BSS.Model(config, model=model)
     model.save()
-    model.resultAnalysis(score, x_test, y_test)
+    model.resultAnalysis(score, x['test'], y['test'])
 
-    plotPredictions(model, dataset, x_test)
+    plotPredictions(model, dataset, x['test'])
 
     return
 
