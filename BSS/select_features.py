@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
-from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS
 
@@ -19,112 +15,55 @@ import BSS
 local_dir = os.path.dirname(__file__)
 
 
-def processData(config, dataset):
-    logging.info("Processing data")
-    df = dataset.df
-
-    print(df.head())
-
-    df['dteday'] = pd.to_datetime(df['dteday'])
-    df.index = df['dteday']
-
-    df = df.drop(['instant', 'dteday', 'casual', 'registered'], axis=1)
-
-    dataset.update(df=df, suffix='-processed')
-    dataset.handleMissingData()
-
-    df = dataset.df
-
-    print(df.axes)
-    print(df.head())
-    print(df.dtypes)
-
-    x = df.drop(config.target, axis=1)  # denotes independent features
-    print("X shape:", x.shape)
-
-    return dataset
-
-
-def extractFeatures(config, dataset):
-    logging.info("Extracting features")
-    df = dataset.df
-
-    # adds some historical data
-    df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
-    df.loc[:, 'diff'] = df.loc[:, 'prev'].diff()
-    df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
-    df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
-
-    dataset.update(df=df, suffix='-extracted')
-    dataset.handleMissingData()
-
-    x = dataset.df.drop(config.target, axis=1)  # denotes independent features
-    y = dataset.df[config.target]  # denotes dependent variables
-
-    print(x.head())
-    print(y.head())
-
-    return dataset, x, y
-
-
-def compareModels(x_train, y_train):
-    logging.info("Training model")
-    models, names, results = [], [], []
-    models.append(('LR', LinearRegression()))
-    models.append(('NN', MLPRegressor(solver='lbfgs')))  # neural network
-    models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
-    models.append(('GBR', GradientBoostingRegressor()))
-
-    scores = np.zeros((len(models), 2))
-    i = 0
-    for name, model in models:
-        tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
-
-        cv_results = cross_val_score(model, x_train, y_train, cv=tscv, scoring='r2')
-        results.append(cv_results)
-        names.append(name)
-        scores[i] = cv_results.mean(), cv_results.std()
-        i += 1
-        print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
-
-    # Compare Algorithms
-    plt.figure()
-    plt.boxplot(results, labels=names)
-    plt.title('Algorithm Comparison')
-    return scores
+def trainModel(x_train, y_train):
+    model = GradientBoostingRegressor()
+    tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
+    cv_results = cross_val_score(model, x_train, y_train, cv=tscv, scoring='r2')
+    return cv_results
 
 
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
+    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day', suffix='-pre-processed')
 
     dataset = BSS.Dataset(config)
-    if not dataset.load():
-        logging.error("Couldn't load a dataset")
+    # Checks if BSS dataset was loaded
+    if dataset.df is None:
+        logging.warning(f"DataFrame object was expected, got '{type(dataset.df)}'")
+        return
 
-    dataset = processData(config, dataset)
+    # Process the dataset
+    dataset.apply(BSS.process.processData)
+    dataset.update(suffix='-processed')
 
     # edit these values
-    num_of_runs = 5
-    unselected_features = [[], ['season'], ['yr'], ['mnth'], ['holiday'], ['weekday'], ['workingday'],
-                           ['season', 'mnth'], ['weekday', 'workingday']]
+    num_of_runs = 100
+    unselected_features = [['season'], ['yr'], ['mnth'], ['is_holiday'], ['weather_code'], ['temp'], ['atemp'],
+                           ['hum'], ['wind_speed'], ['is_weekend'], ['prev'], ['diff'], ['prev-2'], ['diff-2'],
+                           ['season', 'mnth'], ['season', 'yr'], ['yr', 'mnth'], ['season', 'yr', 'mnth']]
 
+    unselected_features = [['season'], ['yr'], ['mnth'],
+                           ['season', 'mnth'], ['season', 'yr'], ['yr', 'mnth'],
+                           ['season', 'yr', 'mnth']]
+
+    df = dataset.df.copy()
     results = []
     for features in unselected_features:
-        temp_dataset = deepcopy(dataset)
-        temp_dataset.df = temp_dataset.df.drop(features, axis=1)
-        temp_dataset, x, y = extractFeatures(config, temp_dataset)
-        x_train, x_test = BSS.dataset.split(x, config.split_ratio)
-        y_train, y_test = BSS.dataset.split(y, config.split_ratio)
+        dataset.update(df=df.drop(features, axis=1))
+        dataset.handleMissingData()
+        x, y = dataset.split()
 
-        scores = np.zeros(2)
+        scores = np.empty(0)
         for i in range(num_of_runs):
-            scores = np.add(scores, compareModels(x_train, y_train))
-        scores = scores / num_of_runs  # average scores
+            scores = np.concatenate((scores, trainModel(x['train'], y['train'])))
         results.append(scores)
 
-    for features, scores in zip(unselected_features, results):
-        print(features)
-        print(scores)
+    for features, result in zip(unselected_features, results):
+        print(f"{features} - Mean: {result.mean()}, Std: {result.std()}")
+
+    plt.figure()
+    plt.boxplot(results, labels=unselected_features)
+    plt.title('Unselected Feature Comparison')
+    plt.show()
 
 
 if __name__ == '__main__':
