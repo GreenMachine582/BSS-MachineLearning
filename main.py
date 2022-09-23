@@ -13,7 +13,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # Sets up the in-built logger to record key information and save it to a text file
 logging.basicConfig(level=logging.INFO, filename='log.txt', filemode='w',
                     format="%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - '%(message)s'")
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Outputs the loggings into screen output
+# logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Outputs the loggings into screen output
 
 # Constants
 ROOT_DIR = os.path.dirname(__file__)
@@ -42,7 +42,7 @@ def main() -> None:
         0 - Quit
         1 - Testing
         2 - Data Pre-Processing
-        3 - Process Data
+        3 - Data Processing
         4 - Select Features
         5 - Find best params
         6 - Clustering (TBA)
@@ -64,7 +64,7 @@ def main() -> None:
             elif choice == 2:
                 BSS.dataPreprocessing(ROOT_DIR)
             elif choice == 3:
-                BSS.processData(ROOT_DIR)
+                BSS.dataProcessing(ROOT_DIR)
             elif choice == 4:
                 BSS.selectFeatures(ROOT_DIR)
             elif choice == 5:

@@ -3,7 +3,6 @@ import logging
 import os
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sn
 
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
@@ -21,6 +20,7 @@ local_dir = os.path.dirname(__file__)
 
 
 def exploratoryDataAnalysis(dataset):
+    # TODO: Fix, Change, remove?
     logging.info("Exploratory Data Analysis")
     df = dataset.df
 
@@ -48,22 +48,22 @@ def exploratoryDataAnalysis(dataset):
     plt.show()  # displays all figures
 
 
-def extractFeatures(config, dataset):
+def extractFeatures(df, target: str):
+    # TODO: Fix, Change, remove?
     logging.info("Extracting features")
-    df = dataset.df
 
-    df = df.drop(['yr', 'mnth'], axis=1)
+    # Remove due to multi-collinearity
+    df.drop('temp', axis=1, inplace=True)
 
-    dataset.update(df=df, suffix='-extracted')
-    dataset.handleMissingData()
+    df = BSS.handleMissingData(df)
 
-    x = dataset.df.drop(config.target, axis=1)  # denotes independent features
-    y = dataset.df[config.target]  # denotes dependent variables
+    # x = df.drop(target, axis=1)  # denotes independent features
+    # y = df[target]  # denotes dependent variables
+    #
+    # print(x.head())
+    # print(y.head())
 
-    print(x.head())
-    print(y.head())
-
-    return dataset
+    return df
 
 
 def compareModels(x_train, y_train):
@@ -71,7 +71,7 @@ def compareModels(x_train, y_train):
     #  and scoring methods
     logging.info("Comparing models")
     models, names, results = [], [], []
-    # models.append(('LR', LinearRegression()))
+    models.append(('LR', LinearRegression()))
     models.append(('NN', MLPRegressor(solver='lbfgs')))  # neural network
     models.append(('KNN', KNeighborsRegressor()))
     models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
@@ -83,7 +83,7 @@ def compareModels(x_train, y_train):
     for name, model in models:
         tscv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
 
-        cv_results = cross_val_score(model, x_train, y_train, cv=tscv, scoring='r2')
+        cv_results = cross_val_score(model, x_train, y_train, cv=tscv)
         results.append(cv_results)
         names.append(name)
         print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
@@ -94,6 +94,7 @@ def compareModels(x_train, y_train):
 
 
 def trainModel(x_train, y_train):
+    # TODO: Fix, Change, remove?
     logging.info("Training best model")
     model = GradientBoostingRegressor(learning_rate=0.09, max_depth=6, n_estimators=600, subsample=0.12)
     model.fit(x_train, y_train)
@@ -101,6 +102,7 @@ def trainModel(x_train, y_train):
 
 
 def plotPredictions(model, dataset, x_test):
+    # TODO: Fix, Change, remove?
     # plots a line graph of BSS True and Predicted Demand vs Date
     predicted_demand = model.model.predict(x_test)
     plt.figure()
@@ -113,41 +115,47 @@ def plotPredictions(model, dataset, x_test):
 
 
 def main(dir_=local_dir):
-    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day', suffix='-pre-processed')
+    # TODO: Fix, Change, remove?
+    name = 'Bike-Sharing-Dataset-day'
+    config = BSS.Config(dir_, name)
+    if not config.load():
+        config.save()
 
-    dataset = BSS.Dataset(config)
-    # Checks if BSS dataset was loaded
-    if dataset.df is None:
-        logging.warning(f"'DataFrame' object was expected, got {type(dataset.df)}")
+    dataset = BSS.Dataset(config.dataset)
+    if not dataset.load():
         return
 
     # Process the dataset
-    dataset.apply(BSS.process.processData)
-    dataset.update(suffix='-processed')
+    dataset.apply(BSS.preProcess, name)
+    dataset.update(name=name + '-pre-processed')
+    dataset.apply(BSS.processData)
+    dataset.update(name=name + '-processed')
 
     exploratoryDataAnalysis(dataset)
 
-    # dataset = extractFeatures(config, dataset)
+    dataset.apply(extractFeatures, dataset.target)
+    dataset.update(name=name + '-extracted')
 
-    x, y = dataset.split()
+    X_train, X_test, y_train, y_test = dataset.split(config.model['random_seed'])
 
     # plots a corresponding matrix
     plt.figure()
     sn.heatmap(dataset.df.corr(), annot=True)
 
-    compareModels(x['train'], y['train'])
+    compareModels(X_train, y_train)
 
     plt.show()
 
-    model = trainModel(x['train'], y['train'])
-    score = model.score(x['test'], y['test'])
+    model = trainModel(X_train, y_train)
+    score = model.score(X_test, y_test)
 
-    model = BSS.Model(config, model=model)
+    model = BSS.Model(config.model, model=model)
     model.save()
-    model.resultAnalysis(score, x['test'], y['test'])
+    model.resultAnalysis(score, X_test, y_test)
 
-    plotPredictions(model, dataset, x['test'])
+    plotPredictions(model, dataset, X_test)
 
+    logging.info(f"Completed")
     return
 
 

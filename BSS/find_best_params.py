@@ -7,8 +7,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.svm import SVR
 
 import BSS
-from .process import preProcess, processData
-from .test import extractFeatures
+from BSS.test import extractFeatures
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -31,21 +30,30 @@ def getSVR():
     return SVR(), param_search
 
 
-def main(dir_=local_dir):
-    config = BSS.Config(dir_, name='Bike-Sharing-Dataset-day')
+def main(dir_: str = local_dir):
+    """
 
-    dataset = BSS.Dataset(config)
-    # Checks if BSS dataset was loaded
-    if dataset.df is None:
-        logging.warning("Dataset is a NoneType")
+
+    :param dir_: project's path directory, should be a str
+    :return: None
+    """
+    # TODO: Documentation and error handle
+    name = 'Bike-Sharing-Dataset-day'
+    config = BSS.Config(dir_, name)
+    if not config.load():
+        config.save()
+
+    # Loads the BSS dataset
+    dataset = BSS.Dataset(config.dataset, name=name + '-pre-processed')
+    if not dataset.load():
         return
 
-    # Pre-process the dataset
-    dataset.apply(BSS.process.preProcess, 'London')
-    dataset.apply(BSS.process.processData)
-    dataset = extractFeatures(config, dataset)
+    # Process the dataset
+    dataset.apply(BSS.processData)
 
-    x, y = dataset.split()
+    dataset.apply(extractFeatures, dataset.target)
+
+    X_train, X_test, y_train, y_test = dataset.split(config.model['random_seed'])
 
     logging.info('Selecting model')
 
@@ -74,17 +82,19 @@ def main(dir_=local_dir):
             else:
                 print("\nPlease enter a valid choice!")
 
-    model = BSS.Model(config, model=model)
+    model = BSS.Model(config.model, model=model)
 
-    best_estimator, best_score, best_params = model.gridSearch(param_search, x['train'], y['train'])
+    best_estimator, best_score, best_params = model.gridSearch(param_search, X_train, y_train)
 
     print('The best estimator:', best_estimator)
     print('The best score:', best_score)
     print('The best params:', best_params)
     model.update(model=best_estimator)
 
-    results = model.resultAnalysis(best_score, x['test'], y['test'])
-    print(results)
+    model.resultAnalysis(best_score, X_test, y_test)
+
+    logging.info(f"Completed")
+    return
 
 
 if __name__ == '__main__':

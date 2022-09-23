@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
-from BSS import utils
+from . import utils
 
 
 class Config(object):
@@ -12,52 +11,68 @@ class Config(object):
     class can use. The end-user can save, load and update the attributes.
     """
 
-    def __init__(self, working_dir: str = '', **kwargs: Any | dict):
-        self.working_dir = working_dir
-        self.name = ''
-        self.suffix = ''
+    def __init__(self, dir_: str, name: str, **kwargs) -> None:
+        """
+        Create an instance of Dataset
 
-        self.config_dir = working_dir + '\\configs'
+        :param dir_: dataset's path directory, should be a str
+        :param name: dataset's name, should be a str
+        :key dataset: config for dataset, should be a dict
+        :key model: config for model, should be a dict
+        :return: None
+        """
+        # Default configuration for Config
+        self.dir_ = utils.joinPath(dir_, 'configs')
+        self.name = name
 
-        self.config_extension = '.json'
+        # Default configuration for Dataset
+        self.dataset = {'dir_': utils.joinPath(dir_, 'datasets'),
+                        'name': name,
+                        'sep': ',',
+                        'feature_names': [],
+                        'target': 'cnt',
+                        'split_ratio': 0.8}
 
-        # dataset related
-        self.seperator = ','
-        self.target = 'cnt'
-        self.names = None
-
-        # training related
-        self.split_ratio = 0.8
-        self.random_seed = 0
+        # Default configuration for Model
+        self.model = {'dir_': utils.joinPath(dir_, 'models'),
+                      'name': name,
+                      'random_seed': 0}
 
         self.update(**kwargs)
 
-        if self.name and not self.load():
-            self.save()
-
-    def update(self, **kwargs: Any) -> None:
+    def update(self, **kwargs) -> None:
         """
-        Updates the class attributes with given keys and values.
-        :param kwargs: dict[str: Any]
-        :return:
-            - None
-        """
-        if 'kwargs' in kwargs and isinstance(kwargs['kwargs'], dict):
-            kwargs = kwargs['kwargs']
+        Updates the instance attributes, if given attributes are present
+        in instance and match existing types.
 
-        name = self.name if 'name' not in kwargs else kwargs['name']
-        logging.info(f"Updating '{name}' dataset attributes")
+        :key dir_: dataset's path directory, should be a str
+        :key name: dataset's name, should be a str
+        :key dataset: config for dataset, should be a dict
+        :key model: config for model, should be a dict
+        :return: None
+        """
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            if not hasattr(self, key):
+                logging.error(f"'{self.__class__.__name__}' object has no attribute '{key}'")
+            else:
+                attr_ = getattr(self, key)
+                if isinstance(attr_, (type(value), type(None))):
+                    setattr(self, key, value)
+                else:
+                    logging.error(f"'{key}': got '{type(value).__name__}' but expected type is "
+                                  f"'{type(attr_).__name__}'")
+        logging.info(f"Updated config '{self.name}' attributes")
 
     def load(self) -> bool:
         """
         Loads the config file and updates the object attributes.
-        :return:
-            - completed - bool
+
+        :return: completed - bool
         """
-        data = utils.load(self.config_dir, self.name + self.suffix, self.config_extension)
+        name = utils.joinPath(self.name, ext='.json')
+        data = utils.load(self.dir_, name)
         if data is None:
+            logging.warning(f"Failed to load config '{self.name}'")
             return False
         self.update(**data)
         return True
@@ -65,8 +80,13 @@ class Config(object):
     def save(self) -> bool:
         """
         Saves the config attributes as an indented dict in a json file, to allow
-        end-users to edit and easily view the default configs.
-        :return:
-            - completed - bool
+        users to edit and easily view the default configs.
+
+        :return: completed - bool
         """
-        return utils.save(self.config_dir, self.name + self.suffix, self.__dict__, self.config_extension)
+        utils.makePath(self.dir_)
+        name = utils.joinPath(self.name, ext='.json')
+        completed = utils.save(self.dir_, name, self.__dict__)
+        if not completed:
+            logging.warning(f"Failed to save config '{self.name}'")
+        return completed

@@ -178,35 +178,47 @@ def dataConsolidation(df_dc, df_london):
 
 
 def main(dir_: str = '') -> None:
-    config = BSS.Config(dir_)
     # Bike-Sharing-Dataset-hour is a detailed version of Bike-Sharing-Dataset-day, it will be used in process
-    bike_dc = BSS.Dataset(config, name='Bike-Sharing-Dataset-hour')
-    bike_london = BSS.Dataset(config, name='london-merged-hour')
+
+    # Loads the BSS Configs
+    dc_config = BSS.Config(dir_, 'Bike-Sharing-Dataset-hour')
+    if not dc_config.load():
+        dc_config.save()
+    london_config = BSS.Config(dir_, 'london_merged-hour')
+    if not london_config.load():
+        london_config.save()
+
+    # Loads the BSS datasets
+    dc_dataset = BSS.Dataset(dc_config.dataset)
+    london_dataset = BSS.Dataset(london_config.dataset)
+    if not dc_dataset.load() or not london_dataset.load():
+        return
 
     # loads the datasets
-    bike_dc.load()
-    bike_london.load()
+    dc_dataset.load()
+    london_dataset.load()
 
     # handle missing data
-    bike_dc.handleMissingData()
-    bike_london.handleMissingData()
+    dc_dataset.apply(BSS.handleMissingData)
+    london_dataset.apply(BSS.handleMissingData)
 
     # updates and saves the datasets with accompanying names
-    bike_dc.update(suffix='-processed')
-    bike_dc.save()
-    bike_london.update(suffix='-processed')
-    bike_london.save()
+    # dc_dataset.update(name='Bike-Sharing-Dataset-hour-processed')
+    # dc_dataset.save()
+    # london_dataset.update(name='london-merged-hour-processed')
+    # london_dataset.save()
 
     # data consolidation
-    consolidated_bike = dataConsolidation(bike_dc.df, bike_london.df)
-    bike = BSS.Dataset(config, df=consolidated_bike, name='bike', suffix='-consolidated')
-    bike.save()
+    consolidated_bike = dataConsolidation(dc_dataset.df, london_dataset.df)
+
+    bike_dataset = BSS.Dataset(dc_config.dataset, df=consolidated_bike, name='bike-consolidated')
+    bike_dataset.save()
 
     # feature selection
     # the selection can only remove the attributes which are totally depend on other attributes.
-    bike.df.drop(["season", "is_workingday"], axis=1, inplace=True)
-    bike.update(suffix='-selected')
-    bike.save()
+    bike_dataset.df.drop(["season", "is_workingday"], axis=1, inplace=True)
+    bike_dataset.update(name='bike-consolidated-selected')
+    bike_dataset.save()
 
 
 if __name__ == '__main__':
