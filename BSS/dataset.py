@@ -82,7 +82,7 @@ def save(dir_: str, name: str, df: DataFrame, sep: str = ',') -> bool:
     return True
 
 
-def split(X: DataFrame, y: DataFrame, split_ratio: float = 0.8, random_seed: int = 0,
+def split(X: DataFrame, y: DataFrame, split_ratio: float = 0.8, random_seed: int = None,
           time_series: bool = False) -> tuple | None:
     """
     Splits the datasets into two smaller datasets with given ratio.

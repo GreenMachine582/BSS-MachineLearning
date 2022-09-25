@@ -24,6 +24,7 @@ class Config(object):
         # Default configuration for Config
         self.dir_ = utils.joinPath(dir_, 'configs')
         self.name = name
+        self.random_seed = 0
 
         # Default configuration for Dataset
         self.dataset = {'dir_': utils.joinPath(dir_, 'datasets'),
@@ -35,10 +36,12 @@ class Config(object):
 
         # Default configuration for Model
         self.model = {'dir_': utils.joinPath(dir_, 'models'),
-                      'name': name,
-                      'random_seed': 0}
+                      'name': name}
 
         self.update(**kwargs)
+
+        if not self.load():
+            self.save()
 
     def update(self, **kwargs) -> None:
         """

@@ -182,11 +182,7 @@ def main(dir_: str = '') -> None:
 
     # Loads the BSS Configs
     dc_config = BSS.Config(dir_, 'Bike-Sharing-Dataset-hour')
-    if not dc_config.load():
-        dc_config.save()
     london_config = BSS.Config(dir_, 'london_merged-hour')
-    if not london_config.load():
-        london_config.save()
 
     # Loads the BSS datasets
     dc_dataset = BSS.Dataset(dc_config.dataset)

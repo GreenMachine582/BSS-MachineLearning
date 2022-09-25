@@ -59,13 +59,11 @@ class Model(object):
         :key model: the model itself, should be an Any
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
-        :key random_seed: model's random seed, should be an int
         :return: None
         """
         self.model: Any = None
         self.dir_: str = ''
         self.name: str = ''
-        self.random_seed: int = 0
 
         self.update(**config)
         self.update(**kwargs)
@@ -78,10 +76,8 @@ class Model(object):
         :key model: the model itself, should be an Any
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
-        :key random_seed: model's random seed, should be an int
         :return: None
         """
-
         for key, value in kwargs.items():
             if not hasattr(self, key):
                 logging.error(f"'{self.__class__.__name__}' object has no attribute '{key}'")

@@ -38,8 +38,8 @@ def exploratoryDataAnalysis(dataset):
     # TODO: Add graphs
     #   See the graphs on pg. 18 as reference.
     #   https://www.researchgate.net/publication/337062461_Regression_Model_for_Bike-Sharing_Service_by_Using_Machine_Learning
-    #  a) Bar graph - Demand vs temperature/weatheris (2 separate graphs)
-    #  b) Box plots - Demand vs season/holiday/weekday/workingday (so 4 separate box plots)
+    #  a) Bar graph - Demand vs atemp/weather_code (2 separate graphs)
+    #  b) Box plots - Demand vs season/is_holiday/is_weekend (so 3 separate box plots)
 
     ### Write code below here ###
 
@@ -52,9 +52,6 @@ def extractFeatures(df, target: str):
     # TODO: Fix, Change, remove?
     logging.info("Extracting features")
 
-    # Remove due to multi-collinearity
-    df.drop('temp', axis=1, inplace=True)
-
     df = BSS.handleMissingData(df)
 
     # x = df.drop(target, axis=1)  # denotes independent features
@@ -66,17 +63,17 @@ def extractFeatures(df, target: str):
     return df
 
 
-def compareModels(x_train, y_train):
+def compareModels(x_train, y_train, random_seed: int = None):
     # TODO: separate the clustering techniques and apply appropriate prediction
     #  and scoring methods
     logging.info("Comparing models")
     models, names, results = [], [], []
-    models.append(('LR', LinearRegression()))
-    models.append(('NN', MLPRegressor(solver='lbfgs')))  # neural network
+    # models.append(('LR', LinearRegression()))
+    models.append(('NN', MLPRegressor(solver='lbfgs', random_state=random_seed)))  # neural network
     models.append(('KNN', KNeighborsRegressor()))
-    models.append(('RF', RandomForestRegressor(n_estimators=10)))  # Ensemble method - collection of many decision trees
-    models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
-    models.append(('GBR', GradientBoostingRegressor()))
+    models.append(('RF', RandomForestRegressor(n_estimators=10, random_state=random_seed)))  # Ensemble method - collection of many decision trees
+    # models.append(('SVR', SVR(gamma='auto')))  # kernel = linear
+    models.append(('GBR', GradientBoostingRegressor(random_state=random_seed)))
     # models.append(('AC', AgglomerativeClustering(n_clusters=4)))
     # models.append(('BIC', SpectralBiclustering(n_clusters=(4, 3))))
 
@@ -88,15 +85,16 @@ def compareModels(x_train, y_train):
         names.append(name)
         print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
 
-    plt.figure()
-    plt.boxplot(results, labels=names)
-    plt.title('Algorithm Comparison')
+    # plt.figure()
+    # plt.boxplot(results, labels=names)
+    # plt.title('Algorithm Comparison')
 
 
-def trainModel(x_train, y_train):
+def trainModel(x_train, y_train, random_seed: int = None):
     # TODO: Fix, Change, remove?
     logging.info("Training best model")
-    model = GradientBoostingRegressor(learning_rate=0.09, max_depth=6, n_estimators=600, subsample=0.12)
+    model = GradientBoostingRegressor(learning_rate=0.09, max_depth=6, n_estimators=600, subsample=0.12,
+                                      random_state=random_seed)
     model.fit(x_train, y_train)
     return model
 
@@ -116,44 +114,33 @@ def plotPredictions(model, dataset, x_test):
 
 def main(dir_=local_dir):
     # TODO: Fix, Change, remove?
-    name = 'Bike-Sharing-Dataset-day'
-    config = BSS.Config(dir_, name)
-    if not config.load():
-        config.save()
+    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-hour')
 
     dataset = BSS.Dataset(config.dataset)
     if not dataset.load():
         return
 
-    # Process the dataset
-    dataset.apply(BSS.preProcess, name)
-    dataset.update(name=name + '-pre-processed')
-    dataset.apply(BSS.processData)
-    dataset.update(name=name + '-processed')
+    dataset = BSS.processDataset(dataset)
 
-    exploratoryDataAnalysis(dataset)
+    # exploratoryDataAnalysis(dataset)
 
-    dataset.apply(extractFeatures, dataset.target)
-    dataset.update(name=name + '-extracted')
+    # dataset.apply(extractFeatures, dataset.target)
+    # dataset.update(name=config.name + '-extracted')
 
-    X_train, X_test, y_train, y_test = dataset.split(config.model['random_seed'])
+    X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
 
-    # plots a corresponding matrix
-    plt.figure()
-    sn.heatmap(dataset.df.corr(), annot=True)
-
-    compareModels(X_train, y_train)
+    compareModels(X_train, y_train, random_seed=config.random_seed)
 
     plt.show()
 
-    model = trainModel(X_train, y_train)
+    model = trainModel(X_train, y_train, random_seed=config.random_seed)
     score = model.score(X_test, y_test)
 
     model = BSS.Model(config.model, model=model)
     model.save()
     model.resultAnalysis(score, X_test, y_test)
 
-    plotPredictions(model, dataset, X_test)
+    # plotPredictions(model, dataset, X_test)
 
     logging.info(f"Completed")
     return

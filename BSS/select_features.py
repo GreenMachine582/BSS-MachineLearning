@@ -11,6 +11,7 @@ from pandas import DataFrame
 
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
 
 import BSS
 from BSS.test import extractFeatures
@@ -19,16 +20,17 @@ from BSS.test import extractFeatures
 local_dir = os.path.dirname(__file__)
 
 
-def trainModel(X_train: DataFrame, y_train: DataFrame, time_series: bool = False) -> ndarray:
+def trainModel(X_train: DataFrame, y_train: DataFrame, random_seed: int = None, time_series: bool = False) -> ndarray:
     """
     Trains and cross validates a basic model with default params.
 
     :param X_train: training independent features, should be a DataFrame
     :param y_train: training dependent variables, should be a DataFrame
+    :param random_seed: random seed, should be an int
     :param time_series: whether the dataset is a time series, should be a bool
     :return: cv_results - ndarray[float]
     """
-    model = GradientBoostingRegressor()
+    model = MLPRegressor(solver='lbfgs', random_state=random_seed)
     cv = 10  # n Folds
     if time_series:
         cv = TimeSeriesSplit(n_splits=10)  # TimeSeries Cross validation
@@ -45,18 +47,14 @@ def main(dir_: str = local_dir):
     :return:
     """
     # TODO: Documentation and error handle
-    name = 'london_merged-hour'
-    config = BSS.Config(dir_, name)
-    if not config.load():
-        config.save()
+    config = BSS.Config(dir_, 'london_merged-hour')
 
     # Loads the BSS dataset
-    dataset = BSS.Dataset(config.dataset, name=name + '-pre-processed')
+    dataset = BSS.Dataset(config.dataset)
     if not dataset.load():
         return
 
-    # Process the dataset
-    dataset.apply(BSS.processData)
+    dataset = BSS.processDataset(dataset)
 
     # edit these values
     num_of_runs = 5
@@ -74,13 +72,14 @@ def main(dir_: str = local_dir):
         dataset.update(df=df.drop(features, axis=1))
         dataset.apply(BSS.handleMissingData)
 
-        X_train, X_test, y_train, y_test = dataset.split(config.model['random_seed'])
+        X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
 
         scores = np.empty(0)
         threads = {}
         with ThreadPoolExecutor(max_workers=max(1, os.cpu_count()-2)) as executor:
             for thread_key in range(num_of_runs):
-                threads[thread_key] = executor.submit(trainModel, *(X_train, y_train), time_series=True)
+                threads[thread_key] = executor.submit(trainModel, X_train, y_train,
+                                                      random_seed=config.random_seed, time_series=True)
 
             for thread_key in threads:
                 scores = np.append(scores, threads[thread_key].result())

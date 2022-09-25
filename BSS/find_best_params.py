@@ -4,6 +4,7 @@ import logging
 import os
 
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
 import BSS
@@ -19,6 +20,14 @@ def getGradientBoostingRegressor():
                     'n_estimators': [((i + 1) * 200) for i in range(10)],
                     'subsample': [((i + 1) * 0.04) for i in range(25)]}
     return GradientBoostingRegressor(), param_search
+
+
+def getMLPRegressor():
+    param_search = {"hidden_layer_sizes": [(1,), (50,)],
+                    "activation": ["identity", "logistic", "tanh", "relu"],
+                    "solver": ["lbfgs", "sgd", "adam"],
+                    "alpha": [0.00005, 0.0005]}
+    return MLPRegressor(), param_search
 
 
 def getSVR():
@@ -38,22 +47,18 @@ def main(dir_: str = local_dir):
     :return: None
     """
     # TODO: Documentation and error handle
-    name = 'Bike-Sharing-Dataset-day'
-    config = BSS.Config(dir_, name)
-    if not config.load():
-        config.save()
+    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-day')
 
     # Loads the BSS dataset
-    dataset = BSS.Dataset(config.dataset, name=name + '-pre-processed')
+    dataset = BSS.Dataset(config.dataset)
     if not dataset.load():
         return
 
-    # Process the dataset
-    dataset.apply(BSS.processData)
+    dataset = BSS.processDataset(dataset)
 
     dataset.apply(extractFeatures, dataset.target)
 
-    X_train, X_test, y_train, y_test = dataset.split(config.model['random_seed'])
+    X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
 
     logging.info('Selecting model')
 
@@ -61,7 +66,8 @@ def main(dir_: str = local_dir):
         print("""
         0 - Back
         1 - Gradient Boosting Regressor
-        2 - SVR
+        2 - MLP Regressor
+        3 - SVR
         """)
         choice = input("Which question number: ")
         try:
@@ -77,6 +83,9 @@ def main(dir_: str = local_dir):
                 model, param_search = getGradientBoostingRegressor()
                 break
             elif choice == 2:
+                model, param_search = getMLPRegressor()
+                break
+            elif choice == 3:
                 model, param_search = getSVR()
                 break
             else:
