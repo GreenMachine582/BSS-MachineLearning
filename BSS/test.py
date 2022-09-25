@@ -2,6 +2,10 @@
 import logging
 import os
 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 import matplotlib.pyplot as plt
 import seaborn as sn
 
@@ -14,6 +18,8 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
 import BSS
+sns.set(style='darkgrid')
+df = pd.read_csv("day.csv")
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -42,7 +48,76 @@ def exploratoryDataAnalysis(dataset):
     #  b) Box plots - Demand vs season/is_holiday/is_weekend (so 3 separate box plots)
 
     ### Write code below here ###
+def Box_plot(x_label, y_label):
+    plt.figure(figsize=(12, 8))
+    ax = sns.boxplot(x=x_label, y=y_label, data=df)
+    ax.set_xlabel(x_label, fontsize=16)
+    ax.set_ylabel(y_label, fontsize=16)
+    plt.show()
 
+
+def bar_graph(x, y, x_label, y_label,type=0):
+    if type:
+        plt.bar(x, y, align='center', tick_label=["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8","0.9","1"])
+    else:
+        plt.bar(x, y,tick_label=["1","2","3"], align='center')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.show()
+
+
+def weathersit_data_process():
+    cnt = df['cnt']
+    weathersit = df['weathersit']
+    x = [1, 2, 3]
+    y = [0, 0, 0]
+    for i in range(len(weathersit)):
+        if weathersit[i] == 1:
+            y[0] = y[0] + cnt[i]
+        elif weathersit[i] == 2:
+            y[1] = y[1] + cnt[i]
+        elif weathersit[i] == 3:
+            y[2] = y[2] + cnt[i]
+    return x, y
+
+
+def temperature_data_process():
+    cnt = df['cnt']
+    temp = df['temp']
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    y = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for i in range(len(temp)):
+        if temp[i] <= 0.1:
+            y[0] = y[0] + cnt[i]
+        elif 0.1 < temp[i] <= 0.2:
+            y[1] = y[1] + cnt[i]
+        elif 0.2 < temp[i] <= 0.3:
+            y[2] = y[2] + cnt[i]
+        elif 0.3 < temp[i] <= 0.4:
+            y[3] = y[3] + cnt[i]
+        elif 0.4 < temp[i] <= 0.5:
+            y[4] = y[4] + cnt[i]
+        elif 0.5 < temp[i] <= 0.6:
+            y[5] = y[5] + cnt[i]
+        elif 0.6 < temp[i] <= 0.7:
+            y[6] = y[6] + cnt[i]
+        elif 0.7 < temp[i] <= 0.8:
+            y[7] = y[7] + cnt[i]
+        elif 0.8 < temp[i] <= 0.9:
+            y[8] = y[8] + cnt[i]
+        elif 0.9 < temp[i] <= 1:
+            y[9] = y[9] + cnt[i]
+    return x, y
+
+def main1():
+    Box_plot('season','cnt')
+    Box_plot('holiday','cnt')
+    Box_plot('weekday','cnt')
+    Box_plot('workingday','cnt')
+    x1, y1 = temperature_data_process()
+    bar_graph(x1, y1, 'temperature', 'cnt',1)
+    x2, y2 = weathersit_data_process()
+    bar_graph(x2, y2, 'weathersit', 'cnt')
 
 
     plt.show()  # displays all figures
@@ -148,3 +223,4 @@ def main(dir_=local_dir):
 
 if __name__ == '__main__':
     main()
+    main1()
