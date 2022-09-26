@@ -4,7 +4,9 @@ log.txt
 venv
 configs/*
 models/*
-Jupiter Notebooks/*
+Jupyter Notebooks/.ipynb_checkpoints
+Jupyter Notebooks/*.ipynb
+Jupyter Notebooks/*.html
 BSS/__pycache__/
 
 # Byte-compiled / optimized / DLL files

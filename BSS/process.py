@@ -5,10 +5,13 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sn
+import seaborn as sns
 from pandas import DataFrame
 
 from . import Config, Dataset, handleMissingData
+
+
+sns.set(style='darkgrid')
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -67,6 +70,44 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
 
     logging.info(f"Pre-Processed {name} dataset")
     return df
+
+
+def exploratoryDataAnalysis(df: DataFrame) -> None:
+    # TODO: Documentation, error handling, fix sharey
+    logging.info("Exploratory Data Analysis")
+
+    plt.figure()
+    sns.heatmap(df.drop('datetime', axis=1, errors='ignore').corr(), annot=True)
+    plt.title('Pre-Processed Corresponding Matrix')
+
+    # Line Plot
+    plt.figure()
+    plt.plot(df.index, df['cnt'])
+    plt.title('BSS Demand Vs Datetime')
+    plt.xlabel('Datetime')
+    plt.ylabel('Cnt')
+
+    # Bar Plots
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(9, 6), sharey=True)
+    sns.barplot(df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
+    ax1.set_xlabel('Feel Temperature', fontsize=14)
+    ax1.set_ylabel('Cnt', fontsize=14)
+    sns.barplot(x='weather_code', y='cnt', data=df, ax=ax2)
+    ax2.set_xlabel('Weather Codes', fontsize=14)
+    plt.suptitle("BSS Demand")
+
+    # Box plots
+    fig, (ax1, ax2, ax3) = plt.subplots(ncols=3, figsize=(9, 6), sharey=True)
+    sns.boxplot(x='season', y='cnt', data=df, ax=ax1)
+    ax1.set_xlabel('Season', fontsize=14)
+    ax1.set_ylabel('Cnt', fontsize=14)
+    sns.boxplot(x='is_holiday', y='cnt', data=df, ax=ax2)
+    ax2.set_xlabel('Workingday Vs Holiday', fontsize=14)
+    sns.boxplot(x='is_weekend', y='cnt', data=df, ax=ax3)
+    ax3.set_xlabel('Weekday Vs Weekend', fontsize=14)
+    plt.suptitle("BSS Demand")
+
+    plt.show()  # displays all figures
 
 
 def processData(df: DataFrame) -> DataFrame:
@@ -131,7 +172,7 @@ def main(dir_: str = local_dir) -> None:
     Pre-processes and Processes the datasets.
 
     :param dir_: project's path directory, should be a str
-    :return:
+    :return: None
     """
     datasets = ['Bike-Sharing-Dataset-day', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
     for name in datasets:
@@ -143,25 +184,25 @@ def main(dir_: str = local_dir) -> None:
             return
 
         print(dataset.df.head())
-
         dataset.apply(preProcess, name)
         dataset.update(name=name + '-pre-processed')
         dataset.save()
-
-        plt.figure()
-        sn.heatmap(dataset.df.corr(), annot=True)
-        plt.title('Pre-Processed Corresponding Matrix')
+        exploratoryDataAnalysis(dataset.df)
 
         dataset.apply(processData)
         dataset.update(name=name + '-processed')
-
         print(dataset.df.axes)
         print(dataset.df.head())
-        print(dataset.df.dtypes)
-
         plt.figure()
-        sn.heatmap(dataset.df.corr(), annot=True)
+        sns.heatmap(dataset.df.corr(), annot=True)
         plt.title('Processed Corresponding Matrix')
+        plt.show()
+
+        dataset.apply(pd.get_dummies)  # apply one hot encoding to categorical features
+        print(dataset.df.dtypes)
+        plt.figure(figsize=(14, 10))
+        sns.heatmap(dataset.df.corr(), annot=True)
+        plt.title('Processed and Encoded Corresponding Matrix')
         plt.show()
 
 

@@ -8,7 +8,6 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
 import BSS
-from BSS.test import extractFeatures
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -49,14 +48,11 @@ def main(dir_: str = local_dir):
     # TODO: Documentation and error handle
     config = BSS.Config(dir_, 'Bike-Sharing-Dataset-day')
 
-    # Loads the BSS dataset
     dataset = BSS.Dataset(config.dataset)
     if not dataset.load():
         return
 
     dataset = BSS.processDataset(dataset)
-
-    dataset.apply(extractFeatures, dataset.target)
 
     X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
 

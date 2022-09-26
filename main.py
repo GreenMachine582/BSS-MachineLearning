@@ -42,7 +42,8 @@ def main() -> None:
         0 - Quit
         1 - Testing
         2 - Data Processing
-        3 - Find best params
+        3 - Select Model
+        4 - Find best params
         """)
         choice = input("Which question number: ")
         try:
@@ -59,6 +60,8 @@ def main() -> None:
             elif choice == 2:
                 BSS.process.main(ROOT_DIR)
             elif choice == 3:
+                BSS.select_model.main(ROOT_DIR)
+            elif choice == 4:
                 BSS.find_best_params.main(ROOT_DIR)
             else:
                 print("\nPlease enter a valid choice!")
