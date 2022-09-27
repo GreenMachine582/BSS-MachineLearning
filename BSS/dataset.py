@@ -237,8 +237,23 @@ class Dataset(object):
         Splits the dataset into train and test datasets.
 
         :param random_seed: random seed, should be an int
-        :return: X_train, X_test, y_train, y_test - tuple(DataFrame)
+        :return: X_train, X_test, y_train, y_test - tuple[DataFrame]
         """
-        X = self.df.drop(self.target, axis=1)
-        y = self.df[self.target]
-        return split(X, y, split_ratio=self.split_ratio, random_seed=random_seed, time_series=True)
+        return split(self.getIndependent(), self.getDependent(), split_ratio=self.split_ratio, random_seed=random_seed,
+                     time_series=True)
+
+    def getIndependent(self) -> DataFrame:
+        """
+        Gets the independent features.
+
+        :return: independent - DataFrame
+        """
+        return self.df.drop(self.target, axis=1)
+
+    def getDependent(self) -> DataFrame:
+        """
+        Gets the dependent variables.
+
+        :return: dependent - DataFrame
+        """
+        return self.df[self.target]
