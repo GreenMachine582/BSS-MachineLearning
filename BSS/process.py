@@ -22,7 +22,7 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
     Pre-Process the BSS dataset, by generalising feature names, correcting
     datatypes, normalising values and handling invalid instances.
 
-    :param df: the dataset, should be a DataFrame
+    :param df: BSS dataset, should be a DataFrame
     :param name: dataset's filename, should be a str
     :return: df - DataFrame
     """
@@ -73,22 +73,39 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
 
 
 def exploratoryDataAnalysis(df: DataFrame) -> None:
-    # TODO: Documentation, error handling, fix sharey
+    """
+    Performs initial investigations on data to discover patterns, to spot
+    anomalies,to test hypothesis and to check assumptions with the help
+    of summary statistics and graphical representations.
+
+    :param df: BSS dataset, should be a DataFrame
+    :return: None
+    """
     logging.info("Exploratory Data Analysis")
 
     plt.figure()
-    sns.heatmap(df.drop('datetime', axis=1, errors='ignore').corr(), annot=True)
+    sns.heatmap(df.drop('datetime', axis=1).corr(), annot=True)
     plt.title('Pre-Processed Corresponding Matrix')
+
+    # Month/Day Plot
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), gridspec_kw={'width_ratios': [1, 3]})
+    sns.barplot(x='mnth', y='cnt', data=df, ax=ax1)
+    ax1.set_xlabel('Month', fontsize=14)
+    ax1.set_ylabel('Cnt', fontsize=14)
+    sns.lineplot(pd.DatetimeIndex(df['datetime']).day, y='cnt', data=df, ax=ax2)
+    ax2.set_xlabel('Day', fontsize=14)
+    ax2.set_ylabel('Cnt', fontsize=14)
+    plt.suptitle("BSS Demand")
 
     # Line Plot
     plt.figure()
-    plt.plot(df.index, df['cnt'])
+    plt.plot(df['datetime'], df['cnt'])
     plt.title('BSS Demand Vs Datetime')
     plt.xlabel('Datetime')
     plt.ylabel('Cnt')
 
     # Bar Plots
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(9, 6), sharey=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
     sns.barplot(df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Feel Temperature', fontsize=14)
     ax1.set_ylabel('Cnt', fontsize=14)
@@ -97,7 +114,7 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     plt.suptitle("BSS Demand")
 
     # Box plots
-    fig, (ax1, ax2, ax3) = plt.subplots(ncols=3, figsize=(9, 6), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1, 1]})
     sns.boxplot(x='season', y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Season', fontsize=14)
     ax1.set_ylabel('Cnt', fontsize=14)
@@ -107,23 +124,37 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     ax3.set_xlabel('Weekday Vs Weekend', fontsize=14)
     plt.suptitle("BSS Demand")
 
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(6, 4), sharey='row')
+    sns.boxplot(y=df['temp'], ax=ax1)
+    ax1.set_ylabel('Temp', fontsize=14)
+    sns.boxplot(y=df['atemp'], ax=ax2)
+    ax2.set_ylabel('Feel Temp', fontsize=14)
+    sns.boxplot(y=df['hum'], ax=ax3)
+    ax3.set_ylabel('Humidity', fontsize=14)
+    sns.boxplot(y=df['wind_speed'], ax=ax4)
+    ax4.set_ylabel('Wind Speed', fontsize=14)
+    plt.suptitle("Normalised Environmental Values")
+
     plt.show()  # displays all figures
 
 
 def processData(df: DataFrame) -> DataFrame:
     """
-    Processes and adapts the BSS dataset to suit time series by adding
-    a datetime index and historical data. It also includes some forms of
-    feature selection by reducing dimensionality and multi-collinearity.
+    Processes and adapts the BSS dataset to suit time series by adding a
+    datetime index. Feature engineering has also been applied by adding
+    historical data. It also includes some forms of feature selection,
+    certain features will be dropped to reduce dimensionality and
+    multi-collinearity which were identified in the previous corresponding
+    matrix.
 
-    :param df: the dataset, should be a DataFrame
+    :param df: BSS dataset, should be a DataFrame
     :return: df - DataFrame
     """
     # Adapts the dataset for time series
     df.index = df['datetime']
     df.drop('datetime', axis=1, inplace=True)
 
-    # Adding historical data
+    # Adds historical data
     df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
     df.loc[:, 'diff'] = df.loc[:, 'prev'].diff()
     df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
@@ -131,7 +162,7 @@ def processData(df: DataFrame) -> DataFrame:
 
     df = handleMissingData(df)
 
-    # Removed to reduce dimensionality and multi-collinearity
+    # Removed to generalise for similar datasets, reduce dimensionality and multi-collinearity
     df.drop(['temp', 'casual', 'registered'], axis=1, errors='ignore', inplace=True)
 
     # Changes datatypes
@@ -174,7 +205,7 @@ def main(dir_: str = local_dir) -> None:
     :param dir_: project's path directory, should be a str
     :return: None
     """
-    datasets = ['Bike-Sharing-Dataset-day', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
+    datasets = ['Bike-Sharing-Dataset-hour', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
     for name in datasets:
         config = Config(dir_, name)
 
@@ -187,6 +218,7 @@ def main(dir_: str = local_dir) -> None:
         dataset.apply(preProcess, name)
         dataset.update(name=name + '-pre-processed')
         dataset.save()
+
         exploratoryDataAnalysis(dataset.df)
 
         dataset.apply(processData)
