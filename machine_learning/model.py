@@ -4,24 +4,26 @@ import logging
 from typing import Any
 
 import numpy as np
-from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from pandas import DataFrame
 from sklearn import metrics
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 
 from . import utils
 
 
-def gridSearch(model, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
-    # TODO: Documentation and error handle
-    logging.info("Grid Searching model hyperparameters")
-    tscv = TimeSeriesSplit(n_splits=n_split)
-    grid_search = GridSearchCV(estimator=model, cv=tscv, param_grid=param_search, n_jobs=n_jobs,
-                               verbose=verbose)
-    grid_search.fit(x_train, y_train)
+def gridSearch(estimator: Any, param_grid: dict | list, X: DataFrame, y: DataFrame, scoring: str | list = None,
+               n_jobs: int = -1, cv: int | object = 10, verbose: int = 2):
+    # TODO: Documentations and error handling
+    grid_search = GridSearchCV(estimator, param_grid, scoring=scoring, n_jobs=n_jobs, cv=cv, verbose=verbose,
+                               return_train_score=True)
+    grid_search.fit(X, y)
     return grid_search
 
 
-def regressionResults(y_test, y_pred):
+def resultAnalysis(y_test, y_pred):
     # TODO: Documentation and error handle
+    logging.info("Analysing results")
+
     explained_variance = metrics.explained_variance_score(y_test, y_pred)
     mean_squared_log_error = metrics.mean_squared_log_error(y_test, y_pred)
     r2 = metrics.r2_score(y_test, y_pred)
@@ -36,32 +38,19 @@ def regressionResults(y_test, y_pred):
     print('RMSE: %.4f' % np.sqrt(mse))
 
 
-def resultAnalysis(model, score, X_test, y_test):
-    # TODO: Documentation and error handle
-    logging.info("Analysing results")
-
-    print("Score - %.4f%s" % (score * 100, "%"))
-
-    y_pred = model.predict(X_test)
-
-    y_pred[y_pred < 0] = 0
-
-    regressionResults(y_test, y_pred)
-
-
 class Model(object):
 
-    def __init__(self, config: dict, **kwargs):
+    def __init__(self, config: dict, **kwargs) -> None:
         """
         Create an instance of Model
 
         :param config: model's configurations, should be a dict
-        :key model: the model itself, should be an Any
+        :key estimator: model's estimator, should be an Any
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
         :return: None
         """
-        self.model: Any = None
+        self.estimator: Any = None
         self.dir_: str = ''
         self.name: str = ''
 
@@ -73,7 +62,7 @@ class Model(object):
         Updates the instance attributes, if given attributes are present
         in instance and match existing types.
 
-        :key model: the model itself, should be an Any
+        :key estimator: model's estimator, should be an Any
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
         :return: None
@@ -92,34 +81,54 @@ class Model(object):
 
     def load(self) -> bool:
         """
-        Loads the model.
+        Loads the estimator.
         :return: completed - bool
         """
         name = utils.joinPath(self.name, ext='.model')
-        self.model = utils.load(self.dir_, name)
-        if self.model is None:
+        self.estimator = utils.load(self.dir_, name)
+        if self.estimator is None:
             logging.warning(f"Failed to load model '{self.name}'")
             return False
         return True
 
     def save(self) -> bool:
         """
-        Saves the model.
+        Saves the estimator.
         :return: completed - bool
         """
         utils.makePath(self.dir_)
         name = utils.joinPath(self.name, ext='.model')
-        completed = utils.save(self.dir_, name, self.model)
+        completed = utils.save(self.dir_, name, self.estimator)
         if not completed:
             logging.warning(f"Failed to save model '{self.name}'")
         return completed
 
-    def gridSearch(self, param_search, x_train, y_train, n_split=10, n_jobs=-1, verbose=2):
-        # TODO: Documentation and error handle
-        grid_search = gridSearch(self.model, param_search, x_train, y_train, n_split=n_split, n_jobs=n_jobs,
-                                 verbose=verbose)
-        return grid_search.best_estimator_, grid_search.best_score_, grid_search.best_params_
+    def gridSearch(self, param_search: dict | list, X: DataFrame, y: DataFrame) -> GridSearchCV:
+        """
 
-    def resultAnalysis(self, score, x_test, y_test):
-        # TODO: Documentation and error handle
-        resultAnalysis(self.model, score, x_test, y_test)
+        :param param_search:
+        :param X:
+        :param y:
+        :return: results_cv - GridSearchCV
+        """
+        # TODO: Documentation and error handling
+        return gridSearch(self.estimator, param_search, X, y, cv=TimeSeriesSplit(10))
+
+    def fit(self, X_train: DataFrame, y_train: DataFrame) -> None:
+        """
+        Fitting the estimator with provided training data.
+
+        :param X_train: training independent features, should be a DataFrame
+        :param y_train: training dependent variables, should be a DataFrame
+        :return: None
+        """
+        self.estimator.fit(X_train, y_train)
+
+    def predict(self, X_test: DataFrame) -> DataFrame:
+        """
+        Forms predictions using the estimator and testing data.
+
+        :param X_test: testing independent features, should be a DataFrame
+        :return: y_pred - DataFrame
+        """
+        return self.estimator.predict(X_test)

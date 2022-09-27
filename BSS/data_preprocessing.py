@@ -16,7 +16,7 @@ import os
 
 from pandas import DataFrame
 
-import BSS
+import machine_learning as ml
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -181,12 +181,12 @@ def main(dir_: str = '') -> None:
     # Bike-Sharing-Dataset-hour is a detailed version of Bike-Sharing-Dataset-day, it will be used in process
 
     # Loads the BSS Configs
-    dc_config = BSS.Config(dir_, 'Bike-Sharing-Dataset-hour')
-    london_config = BSS.Config(dir_, 'london_merged-hour')
+    dc_config = ml.Config(dir_, 'Bike-Sharing-Dataset-hour')
+    london_config = ml.Config(dir_, 'london_merged-hour')
 
     # Loads the BSS datasets
-    dc_dataset = BSS.Dataset(dc_config.dataset)
-    london_dataset = BSS.Dataset(london_config.dataset)
+    dc_dataset = ml.Dataset(dc_config.dataset)
+    london_dataset = ml.Dataset(london_config.dataset)
     if not dc_dataset.load() or not london_dataset.load():
         return
 
@@ -195,8 +195,8 @@ def main(dir_: str = '') -> None:
     london_dataset.load()
 
     # handle missing data
-    dc_dataset.apply(BSS.handleMissingData)
-    london_dataset.apply(BSS.handleMissingData)
+    dc_dataset.apply(ml.handleMissingData)
+    london_dataset.apply(ml.handleMissingData)
 
     # updates and saves the datasets with accompanying names
     # dc_dataset.update(name='Bike-Sharing-Dataset-hour-processed')
@@ -207,7 +207,7 @@ def main(dir_: str = '') -> None:
     # data consolidation
     consolidated_bike = dataConsolidation(dc_dataset.df, london_dataset.df)
 
-    bike_dataset = BSS.Dataset(dc_config.dataset, df=consolidated_bike, name='bike-consolidated')
+    bike_dataset = ml.Dataset(dc_config.dataset, df=consolidated_bike, name='bike-consolidated')
     bike_dataset.save()
 
     # feature selection

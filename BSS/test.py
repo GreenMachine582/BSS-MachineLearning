@@ -2,18 +2,50 @@
 import logging
 import os
 
+import pandas as pd
+from matplotlib import pyplot as plt
+from pandas import DataFrame
 from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS
+import machine_learning as ml
 
 # Constants
 local_dir = os.path.dirname(__file__)
 
 
-def main(dir_=local_dir):
-    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-hour')
+def plotPredictions(df: DataFrame, X_test: DataFrame, y_pred: DataFrame) -> None:
+    """
+    Plots the BSS daily demand and predictions.
 
-    dataset = BSS.Dataset(config.dataset)
+    :param df: the dataset itself, should be a DataFrame
+    :param X_test: testing independent features, should be a DataFrame
+    :param y_pred: predicted dependent variables, should be a DataFrame
+    :return:
+    """
+    # plots a line graph of BSS True and Predicted Demand vs Date
+    plt.figure()
+
+    # Groups hourly instance into summed days, makes it easier to plot
+    temp = DataFrame({'datetime': pd.to_datetime(df.index), 'cnt': df['cnt']})
+    temp = temp.groupby(temp['datetime'].dt.date).sum()
+    plt.plot(temp.index, temp['cnt'], color='blue')
+
+    # Groups hourly instance into summed days, makes it easier to plot
+    temp = DataFrame({'datetime': pd.to_datetime(X_test.index), 'y_pred': y_pred})
+    temp = temp.groupby(temp['datetime'].dt.date).sum()
+    plt.plot(temp.index, temp['y_pred'], color='red')
+
+    plt.title('BSS Demand Vs Datetime')
+    plt.xlabel('Datetime')
+    plt.ylabel('Cnt')
+    plt.show()
+
+
+def main(dir_=local_dir):
+    config = ml.Config(dir_, 'Bike-Sharing-Dataset-hour')
+
+    dataset = ml.Dataset(config.dataset)
     if not dataset.load():
         return
 
@@ -23,7 +55,7 @@ def main(dir_=local_dir):
     X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
 
     estimator = GradientBoostingRegressor(random_state=config.random_seed)
-    model = BSS.Model(config.model, estimator=estimator)
+    model = ml.Model(config.model, estimator=estimator)
 
     param_grid = {'loss': ['squared_error', 'absolute_error']}
 
@@ -37,10 +69,8 @@ def main(dir_=local_dir):
     model.save()
 
     y_pred = model.predict(X_test)
-    model.resultAnalysis(y_test, y_pred)
-    model.plotPredictions(dataset.df, X_test, y_pred)
-
-    quit()
+    ml.resultAnalysis(y_test, y_pred)
+    plotPredictions(dataset.df, X_test, y_pred)
 
     logging.info(f"Completed")
     return

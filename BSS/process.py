@@ -8,8 +8,8 @@ import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
 
-from . import Config, Dataset, handleMissingData
-
+import machine_learning as ml
+from machine_learning import Dataset
 
 sns.set(style='darkgrid')
 
@@ -26,7 +26,7 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
     :param name: dataset's filename, should be a str
     :return: df - DataFrame
     """
-    df = handleMissingData(df)
+    df = ml.handleMissingData(df)
 
     if 'Bike-Sharing-Dataset' in name:
         # Renaming features
@@ -165,7 +165,7 @@ def processData(df: DataFrame) -> DataFrame:
     df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
     df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
 
-    df = handleMissingData(df)
+    df = ml.handleMissingData(df)
 
     # Removed to generalise for similar datasets, reduce dimensionality and multi-collinearity
     df.drop(['temp', 'casual', 'registered'], axis=1, errors='ignore', inplace=True)
@@ -212,10 +212,10 @@ def main(dir_: str = local_dir) -> None:
     """
     datasets = ['Bike-Sharing-Dataset-day', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
     for name in datasets:
-        config = Config(dir_, name)
+        config = ml.Config(dir_, name)
 
         # Loads the BSS dataset
-        dataset = Dataset(config.dataset)
+        dataset = ml.Dataset(config.dataset)
         if not dataset.load():
             return
 

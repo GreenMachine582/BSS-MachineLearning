@@ -16,6 +16,7 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.svm import SVR
 
 import BSS
+import machine_learning as ml
 
 # Constants
 local_dir = os.path.dirname(__file__)
@@ -56,16 +57,15 @@ def getCategoricalModels(random_seed: int = None) -> list:
     return models
 
 
-def compareModels(X_train, y_train, models, scoring: str = None, folds: int = 10, time_series: bool = False):
+def compareModels(X, y, models, scoring: str = None, cv: int | object = 10):
     """
     Trains and cross validates a basic model with default params.
 
-    :param X_train: training independent features, should be a DataFrame
-    :param y_train: training dependent variables, should be a DataFrame
+    :param X: independent features, should be a DataFrame
+    :param y: dependent variables, should be a DataFrame
     :param models:
     :param scoring:
-    :param folds: number of folds for cross-validation, should be an int
-    :param time_series: whether the dataset is a time series, should be a bool
+    :param cv:
     :return: cv_results - ndarray[float]
     """
     # TODO: Documentation
@@ -73,40 +73,24 @@ def compareModels(X_train, y_train, models, scoring: str = None, folds: int = 10
     names, results = [], []
 
     for name, model in models:
-        cv = folds  # n Folds
-        if time_series:
-            cv = TimeSeriesSplit(n_splits=folds)  # TimeSeries Cross validation
-        cv_results = cross_val_score(model, X_train, y_train, scoring=scoring, cv=cv)
+        cv_results = cross_val_score(model, X, y, scoring=scoring, cv=cv)
         results.append(cv_results)
         names.append(name)
         print('%s: %f (%f)' % (name, cv_results.mean(), cv_results.std()))
     return results, names
 
 
-def plotPredictions(model, dataset, X_test):
-    # TODO: Fix, Change, remove?
-    # plots a line graph of BSS True and Predicted Demand vs Date
-    predicted_demand = model.model.predict(X_test)
-    plt.figure()
-    plt.plot(dataset.df.index, dataset.df['cnt'], color='blue')
-    plt.plot(X_test.index, predicted_demand, color='red')
-    plt.title('BSS Demand Vs Datetime')
-    plt.xlabel('Datetime')
-    plt.ylabel('Cnt')
-    plt.show()
-
-
 def main(dir_: str = local_dir) -> None:
     """
-
 
     :param dir_: project's path directory, should be a str
     :return: None
     """
     # TODO: Documentation and error handling
-    config = BSS.Config(dir_, 'Bike-Sharing-Dataset-day')
+    name = 'Bike-Sharing-Dataset-hour'
+    config = ml.Config(dir_, name)
 
-    dataset = BSS.Dataset(config.dataset)
+    dataset = ml.Dataset(config.dataset)
     if not dataset.load():
         return
 
@@ -139,9 +123,9 @@ def main(dir_: str = local_dir) -> None:
             else:
                 print("\nPlease enter a valid choice!")
 
-    X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
+    X, y = dataset.getIndependent(), dataset.getDependent()
+    results, names = compareModels(X, y, models, cv=TimeSeriesSplit(n_splits=10))
 
-    results, names = compareModels(X_train, y_train, models)
     plt.figure()
     plt.boxplot(results, labels=names)
     plt.title('Algorithm Comparison')
@@ -150,9 +134,9 @@ def main(dir_: str = local_dir) -> None:
     # Remove models that performed poorly
     if choice == 1:
         del results[4]
-        del results[2]
         del names[4]
-        del names[2]
+        del results[0]
+        del names[0]
 
         plt.figure()
         plt.boxplot(results, labels=names)
@@ -160,28 +144,6 @@ def main(dir_: str = local_dir) -> None:
         plt.show()
     else:
         pass
-
-    # Train best model
-    if choice == 1:
-        model = RandomForestRegressor(random_state=config.random_seed)
-        model.fit(X_train, y_train)
-        score = model.score(X_test, y_test)
-
-        model = BSS.Model(config.model, model=model)
-        model.save()
-        model.resultAnalysis(score, X_test, y_test)
-
-        plotPredictions(model, dataset, X_test)
-    else:
-        model = LogisticRegression()
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-
-        score = accuracy_score(y_test, y_pred)
-        print("Accuracy - %.4f%s" % (score * 100, "%"))
-
-        model = BSS.Model(config.model, model=model)
-        model.save()
 
     logging.info(f"Completed")
     return
