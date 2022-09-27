@@ -97,12 +97,17 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     ax2.set_ylabel('Cnt', fontsize=14)
     plt.suptitle("BSS Demand")
 
+    # Groups hourly instance into summed days, makes it easier to plot the line graph
+    temp = DataFrame({'datetime': df['datetime'], 'cnt': df['cnt']})
+    temp = temp.groupby(temp['datetime'].dt.date).sum()
+
     # Line Plot
     plt.figure()
-    plt.plot(df['datetime'], df['cnt'])
+    plt.plot(temp.index, temp['cnt'])
     plt.title('BSS Demand Vs Datetime')
     plt.xlabel('Datetime')
     plt.ylabel('Cnt')
+    plt.show()
 
     # Bar Plots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
@@ -205,7 +210,7 @@ def main(dir_: str = local_dir) -> None:
     :param dir_: project's path directory, should be a str
     :return: None
     """
-    datasets = ['Bike-Sharing-Dataset-hour', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
+    datasets = ['Bike-Sharing-Dataset-day', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
     for name in datasets:
         config = Config(dir_, name)
 
