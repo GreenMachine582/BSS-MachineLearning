@@ -24,15 +24,15 @@ class Config(object):
         # Default configuration for Config
         self.dir_ = utils.joinPath(dir_, 'configs')
         self.name = name
-        self.random_seed = 0
+        self.random_state = 0
 
         # Default configuration for Dataset
         self.dataset = {'dir_': utils.joinPath(dir_, 'datasets'),
                         'name': name,
                         'sep': ',',
-                        'feature_names': [],
+                        'names': [],
                         'target': 'cnt',
-                        'split_ratio': 0.8}
+                        'train_size': 0.8}
 
         # Default configuration for Model
         self.model = {'dir_': utils.joinPath(dir_, 'models'),
