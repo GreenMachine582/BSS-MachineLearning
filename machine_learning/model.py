@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+import os
 
 import numpy as np
+from numpy import ndarray
 from pandas import DataFrame
 from sklearn import metrics
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
@@ -11,17 +12,74 @@ from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from . import utils
 
 
-def gridSearch(estimator: Any, param_grid: dict | list, X: DataFrame, y: DataFrame, scoring: str | list = None,
-               n_jobs: int = -1, cv: int | object = 10, verbose: int = 2):
-    # TODO: Documentations and error handling
-    grid_search = GridSearchCV(estimator, param_grid, scoring=scoring, n_jobs=n_jobs, cv=cv, verbose=verbose,
-                               return_train_score=True)
-    grid_search.fit(X, y)
+def load(dir_: str, name: str) -> object:
+    """
+    Loads the model from a model file.
+
+    :param dir_: Directory path of file, should be a str
+    :param name: Name of file, should be a str
+    :return: model - object
+    """
+    if not os.path.exists(dir_):
+        logging.warning(f"Path '{dir_}' does not exist")
+        return False
+
+    name = utils.joinPath(name, ext='.model')
+    model = utils.load(dir_, name)
+    if model is None:
+        logging.warning(f"Failed to load model '{name}'")
+    return model
+
+
+def save(dir_: str, name: str, model: object) -> bool:
+    """
+    Saves the model to a model file.
+
+    :param dir_: Directory path of file, should be a str
+    :param name: Name of file, should be a str
+    :param model: The classifier or estimator, should be an object
+    :return: completed - bool
+    """
+    if not os.path.exists(dir_):
+        logging.warning(f"Path '{dir_}' does not exist")
+        return False
+
+    name = utils.joinPath(name, ext='.model')
+    completed = utils.save(dir_, name, model)
+    if not completed:
+        logging.warning(f"Failed to save model '{name}'")
+    return completed
+
+
+def gridSearch(model: object, param_grid: dict | list, **kwargs) -> GridSearchCV:
+    """
+    Exhaustive search over specified parameter values for a model.
+
+    :param model: Model's classifier or estimator, should be an object
+    :param param_grid: Enables searching over any sequence of parameter settings, should be a
+     dict[str] | list[dict[str: Any]]
+    :key scoring: Strategy to evaluate the performance of the cross-validated model on the test set,
+     should be str | list[Any: str | callable] | dict[str: str | callable]
+    :key n_jobs: Number of jobs to run in parallel, should be an int
+    :key refit: Refit an estimator using the best found parameters on the whole dataset, should be a bool
+    :key cv: Determines the cross-validation splitting strategy, should be an int | callable
+    :key verbose: Controls the verbosity/level of messages, should be an int
+    :return: cv_results - GridSearchCV
+    """
+    defaults = {'n_jobs': -1, 'cv': 10, 'verbose': 2}
+    grid_search = GridSearchCV(model, param_grid, **dict(defaults, **kwargs), return_train_score=True)
     return grid_search
 
 
-def resultAnalysis(y_test, y_pred):
-    # TODO: Documentation and error handle
+def resultAnalysis(y_test: DataFrame, y_pred: ndarray) -> None:
+    """
+    Calculates and displays the result analysis
+
+    :param y_test: Testing dependent variables, should be a DataFrame
+    :param y_pred: model predictions, should be a ndarray
+    :return: None
+    """
+    # TODO: Separate classified and estimated predictions.
     logging.info("Analysing results")
 
     explained_variance = metrics.explained_variance_score(y_test, y_pred)
@@ -45,24 +103,23 @@ class Model(object):
         Create an instance of Model
 
         :param config: model's configurations, should be a dict
-        :key estimator: model's estimator, should be an Any
+        :key model: model's classifier or estimator, should be an object
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
         :return: None
         """
-        self.estimator: Any = None
+        self.model: object = None
         self.dir_: str = ''
         self.name: str = ''
 
-        self.update(**config)
-        self.update(**kwargs)
+        self.update(**dict(config, **kwargs))
 
     def update(self, **kwargs) -> None:
         """
         Updates the instance attributes, if given attributes are present
         in instance and match existing types.
 
-        :key estimator: model's estimator, should be an Any
+        :key model: model's classifier or estimator, should be an object
         :key dir_: model's path directory, should be a str
         :key name: model's name, should be a str
         :return: None
@@ -81,54 +138,55 @@ class Model(object):
 
     def load(self) -> bool:
         """
-        Loads the estimator.
+        Loads the model.
+
         :return: completed - bool
         """
-        name = utils.joinPath(self.name, ext='.model')
-        self.estimator = utils.load(self.dir_, name)
-        if self.estimator is None:
-            logging.warning(f"Failed to load model '{self.name}'")
+        model = load(self.dir_, self.name)
+        if model is None:
             return False
+        self.model = model
         return True
 
     def save(self) -> bool:
         """
-        Saves the estimator.
+        Saves the model.
+
         :return: completed - bool
         """
         utils.makePath(self.dir_)
-        name = utils.joinPath(self.name, ext='.model')
-        completed = utils.save(self.dir_, name, self.estimator)
-        if not completed:
-            logging.warning(f"Failed to save model '{self.name}'")
-        return completed
+        return save(self.dir_, self.name, self.model)
 
-    def gridSearch(self, param_search: dict | list, X: DataFrame, y: DataFrame) -> GridSearchCV:
+    def gridSearch(self, param_grid: dict | list, X: DataFrame, y: DataFrame) -> GridSearchCV:
         """
+        Grid searches the model then fits with given data.
 
-        :param param_search:
-        :param X:
-        :param y:
+        :param param_grid: Enables searching over any sequence of parameter settings, should be a
+         dict[str] | list[dict[str: Any]]
+        :param X: Independent features, should be a DataFrame
+        :param y: Dependent variables, should be a DataFrame
         :return: results_cv - GridSearchCV
         """
-        # TODO: Documentation and error handling
-        return gridSearch(self.estimator, param_search, X, y, cv=TimeSeriesSplit(10))
+        cv_results = gridSearch(self.model, param_grid, cv=TimeSeriesSplit(10))
+        cv_results.fit(X, y)
+        self.model = cv_results.best_estimator_
+        return cv_results
 
     def fit(self, X_train: DataFrame, y_train: DataFrame) -> None:
         """
-        Fitting the estimator with provided training data.
+        Fitting the model with provided training data.
 
-        :param X_train: training independent features, should be a DataFrame
-        :param y_train: training dependent variables, should be a DataFrame
+        :param X_train: Training independent features, should be a DataFrame
+        :param y_train: Training dependent variables, should be a DataFrame
         :return: None
         """
-        self.estimator.fit(X_train, y_train)
+        self.model.fit(X_train, y_train)
 
-    def predict(self, X_test: DataFrame) -> DataFrame:
+    def predict(self, X_test: DataFrame) -> ndarray:
         """
-        Forms predictions using the estimator and testing data.
+        Forms predictions using the model and testing data.
 
-        :param X_test: testing independent features, should be a DataFrame
-        :return: y_pred - DataFrame
+        :param X_test: Testing independent features, should be a DataFrame
+        :return: y_pred - ndarray
         """
-        return self.estimator.predict(X_test)
+        return self.model.predict(X_test)
