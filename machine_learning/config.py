@@ -17,8 +17,7 @@ class Config(object):
 
         :param dir_: dataset's path directory, should be a str
         :param name: dataset's name, should be a str
-        :key dataset: config for dataset, should be a dict
-        :key model: config for model, should be a dict
+        :param kwargs: Additional keywords to pass to update
         :return: None
         """
         # Default configuration for Config

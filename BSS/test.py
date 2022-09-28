@@ -4,6 +4,7 @@ import os
 
 import pandas as pd
 from matplotlib import pyplot as plt
+from numpy import ndarray
 from pandas import DataFrame
 from sklearn.ensemble import GradientBoostingRegressor
 
@@ -14,14 +15,14 @@ import machine_learning as ml
 local_dir = os.path.dirname(__file__)
 
 
-def plotPredictions(df: DataFrame, X_test: DataFrame, y_pred: DataFrame) -> None:
+def plotPredictions(df: DataFrame, X_test: DataFrame, y_pred: ndarray) -> None:
     """
     Plots the BSS daily demand and predictions.
 
     :param df: the dataset itself, should be a DataFrame
     :param X_test: testing independent features, should be a DataFrame
-    :param y_pred: predicted dependent variables, should be a DataFrame
-    :return:
+    :param y_pred: predicted dependent variables, should be a ndarray
+    :return: None
     """
     # plots a line graph of BSS True and Predicted Demand vs Date
     plt.figure()
@@ -52,20 +53,16 @@ def main(dir_=local_dir):
     dataset = BSS.processDataset(dataset)
 
     X, y = dataset.getIndependent(), dataset.getDependent()
-    X_train, X_test, y_train, y_test = dataset.split(config.random_seed)
+    X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
 
-    estimator = GradientBoostingRegressor(random_state=config.random_seed)
-    model = ml.Model(config.model, estimator=estimator)
-
+    model = ml.Model(config.model, model=GradientBoostingRegressor(random_state=config.random_state))
     param_grid = {'loss': ['squared_error', 'absolute_error']}
 
     cv_results = model.gridSearch(param_grid, X, y)
-    estimator = cv_results.best_estimator_
-    print('The best estimator:', estimator)
+    print('The best estimator:', cv_results.best_estimator_)
     print('The best score: %.2f%s' % (cv_results.best_score_ * 100, '%'))
     print('The best params:', cv_results.best_params_)
 
-    model.fit(X_train, y_train)
     model.save()
 
     y_pred = model.predict(X_test)

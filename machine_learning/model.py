@@ -58,12 +58,7 @@ def gridSearch(model: object, param_grid: dict | list, **kwargs) -> GridSearchCV
     :param model: Model's classifier or estimator, should be an object
     :param param_grid: Enables searching over any sequence of parameter settings, should be a
      dict[str] | list[dict[str: Any]]
-    :key scoring: Strategy to evaluate the performance of the cross-validated model on the test set,
-     should be str | list[Any: str | callable] | dict[str: str | callable]
-    :key n_jobs: Number of jobs to run in parallel, should be an int
-    :key refit: Refit an estimator using the best found parameters on the whole dataset, should be a bool
-    :key cv: Determines the cross-validation splitting strategy, should be an int | callable
-    :key verbose: Controls the verbosity/level of messages, should be an int
+    :param kwargs: Additional keywords to pass to GridSearchCV
     :return: cv_results - GridSearchCV
     """
     defaults = {'n_jobs': -1, 'cv': 10, 'verbose': 2}
@@ -76,7 +71,7 @@ def resultAnalysis(y_test: DataFrame, y_pred: ndarray) -> None:
     Calculates and displays the result analysis
 
     :param y_test: Testing dependent variables, should be a DataFrame
-    :param y_pred: model predictions, should be a ndarray
+    :param y_pred: Model predictions, should be a ndarray
     :return: None
     """
     # TODO: Separate classified and estimated predictions.
@@ -102,10 +97,8 @@ class Model(object):
         """
         Create an instance of Model
 
-        :param config: model's configurations, should be a dict
-        :key model: model's classifier or estimator, should be an object
-        :key dir_: model's path directory, should be a str
-        :key name: model's name, should be a str
+        :param config: Model's configurations, should be a dict
+        :param kwargs: Additional keywords to pass to update
         :return: None
         """
         self.model: object = None
@@ -119,9 +112,9 @@ class Model(object):
         Updates the instance attributes, if given attributes are present
         in instance and match existing types.
 
-        :key model: model's classifier or estimator, should be an object
-        :key dir_: model's path directory, should be a str
-        :key name: model's name, should be a str
+        :key model: Model's classifier or estimator, should be an object
+        :key dir_: Model's path directory, should be a str
+        :key name: Model's name, should be a str
         :return: None
         """
         for key, value in kwargs.items():

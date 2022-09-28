@@ -16,8 +16,8 @@ def bunchToDataframe(fetched_df: Bunch, target: str = 'target') -> DataFrame | N
     """
     Creates a pandas DataFrame dataset from the SKLearn Bunch object.
 
-    :param fetched_df: dataset fetched from openml, should be a Bunch
-    :param target: dataset's target feature, should be a str
+    :param fetched_df: Dataset fetched from openml, should be a Bunch
+    :param target: Dataset's target feature, should be a str
     :return: df - DataFrame | None
     """
     df = pd.DataFrame(data=fetched_df['data'], columns=fetched_df['feature_names'])
@@ -26,19 +26,18 @@ def bunchToDataframe(fetched_df: Bunch, target: str = 'target') -> DataFrame | N
     return df
 
 
-def load(dir_: str, name: str, feature_names: list = None, target: str = 'target', sep: str = ',') -> DataFrame | None:
+def load(dir_: str, name: str, names: list = None, target: str = 'target', sep: str = ',') -> DataFrame | None:
     """
     Checks and loads a locally stored .csv dataset as a pandas DataFrame. If dataset
     was not located, it will attempt to fetch from OpenML, and convert the dataset to
     a DataFrame object.
 
-    :param dir_: directory path of file, should be a str
-    :param name: name of file, should be a str
-    :param feature_names: dataset's feature names, should be a list[str] | None
-    :param target: dataset's target feature, should be a str
-    :param sep: dataset's seperator, should be a str
-    :return:
-        - df - DataFrame | None
+    :param dir_: Directory path of file, should be a str
+    :param name: Name of file, should be a str
+    :param names: Dataset's feature names, should be a list[str] | None
+    :param target: Dataset's target feature, should be a str
+    :param sep: Dataset's seperator, should be a str
+    :return: df - DataFrame | None
     """
     if os.path.splitext(name)[1] != '.csv':
         logging.warning(f"Filename '{name}' must include correct file extension of '.csv'")
@@ -57,7 +56,7 @@ def load(dir_: str, name: str, feature_names: list = None, target: str = 'target
         utils.makePath(dir_)
         save(dir_, name, df, sep=sep)
 
-    df = pd.read_csv(path_, names=feature_names, sep=sep)
+    df = pd.read_csv(path_, names=names, sep=sep)
     logging.info(f"Dataset '{name}' was loaded")
     return df
 
@@ -66,10 +65,10 @@ def save(dir_: str, name: str, df: DataFrame, sep: str = ',') -> bool:
     """
     Saves the dataset to a csv file using pandas.
 
-    :param dir_: directory path of file, should be a str
-    :param name: name of file, should be a str
-    :param df: the dataset itself, should be a DataFrame
-    :param sep: dataset's seperator, should be a str
+    :param dir_: Directory path of file, should be a str
+    :param name: Name of file, should be a str
+    :param df: The dataset itself, should be a DataFrame
+    :param sep: Dataset's seperator, should be a str
     :return: completed - bool
     """
     if not os.path.exists(dir_):
@@ -82,28 +81,17 @@ def save(dir_: str, name: str, df: DataFrame, sep: str = ',') -> bool:
     return True
 
 
-def split(X: DataFrame, y: DataFrame, split_ratio: float = 0.8, random_seed: int = None,
-          time_series: bool = False) -> tuple | None:
+def split(X: DataFrame, y: DataFrame, **kwargs) -> tuple:
     """
     Splits the datasets into two smaller datasets with given ratio.
 
     :param X: independent features, should be a DataFrame
     :param y: dependent variables, should be a DataFrame
-    :param split_ratio: train and test split ratio, should be a float
-    :param random_seed: random seed, should be an int
-    :param time_series: whether the dataset is a time series, should be a bool
-    :return: X_train, X_test, y_train, y_test - tuple(DataFrame) | None
+    :param kwargs: Additional keywords to pass to train_test_split
+    :return: X_train, X_test, y_train, y_test - tuple(DataFrame)
     """
-    if X.shape[0] != y.shape[0]:
-        logging.warning(f"X and y are not the same size, got: X {X.shape}, y {y.shape}")
-        return None
-
-    size = round(X.shape[0] * split_ratio)
-
-    if time_series:
-        X_train, X_test, y_train, y_test = X[:size], X[size:], y[:size], y[size:]
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=split_ratio, random_state=random_seed)
+    defaults = {'train_size': 0.8}
+    X_train, X_test, y_train, y_test = train_test_split(X, y, **dict(defaults, **kwargs))
 
     logging.info("Train and test datasets have been split")
     return X_train, X_test, y_train, y_test
@@ -139,42 +127,34 @@ class Dataset(object):
         """
         Create an instance of Dataset
 
-        :param config: dataset's configurations, should be a dict
-        :key df: the dataset itself, should be a DataFrame
-        :key dir_: dataset's path directory, should be a str
-        :key name: dataset's name, should be a str
-        :key sep: dataset's seperator, should be a str
-        :key feature_names: dataset's feature names, should be a list[str]
-        :key target: dataset's target feature, should be a str
-        :key split_ratio: train and test split ratio, should be a float
+        :param config: Dataset's configurations, should be a dict
+        :param kwargs: Additional keywords to pass to update
         :return: None
         """
         self.df: DataFrame | None = None
         self.dir_: str = ''
         self.name: str = ''
         self.sep: str = ''
-        self.feature_names: list[str] = []
+        self.names: list[str] = []
         self.target: str = ''
-        self.split_ratio: float = 0.
+        self.train_size: float = 0.
 
-        self.update(**config)
-        self.update(**kwargs)
+        self.update(**dict(config, **kwargs))
 
     def update(self, **kwargs) -> None:
         """
         Updates the instance attributes, if given attributes are present
         in instance and match existing types.
 
-        :key df: the dataset itself, should be a DataFrame
-        :key dir_: dataset's path directory, should be a str
-        :key name: dataset's name, should be a str
-        :key sep: dataset's seperator, should be a str
-        :key feature_names: dataset's feature names, should be a list[str]
-        :key target: dataset's target feature, should be a str
-        :key split_ratio: train and test split ratio, should be a float
+        :key df: The dataset itself, should be a DataFrame
+        :key dir_: Dataset's path directory, should be a str
+        :key name: Dataset's name, should be a str
+        :key sep: Dataset's seperator, should be a str
+        :key names: Dataset's feature names, should be a list[str]
+        :key target: Dataset's target feature, should be a str
+        :key train_size: Train and test split ratio, should be a float
         :return: None
         """
-
         for key, value in kwargs.items():
             if not hasattr(self, key):
                 logging.error(f"'{self.__class__.__name__}' object has no attribute '{key}'")
@@ -194,11 +174,12 @@ class Dataset(object):
         :return: completed - bool
         """
         name = utils.joinPath(self.name, ext='.csv')
-        self.df = load(self.dir_, name, target=self.target, sep=self.sep)
-        if self.df is None:
-            logging.warning(f"Failed to load dataset '{self.name}'")
-            return False
-        return True
+        df = load(self.dir_, name, target=self.target, sep=self.sep)
+        if isinstance(df, DataFrame):
+            self.df = df
+            return True
+        logging.warning(f"Failed to load dataset '{self.name}'")
+        return False
 
     def save(self) -> bool:
         """
@@ -208,39 +189,47 @@ class Dataset(object):
         """
         utils.makePath(self.dir_)
         name = utils.joinPath(self.name, ext='.csv')
-        completed = save(self.dir_, name, self.df)
+
+        completed = save(self.dir_, name, self.df, sep=self.sep)
         if not completed:
             logging.warning(f"Failed to save dataset '{self.name}'")
         return completed
 
-    def apply(self, func: object | callable, *args, **kwargs) -> bool:
+    def apply(self, func: callable, *args, **kwargs) -> DataFrame | tuple | dict:
         """
         Applies the given function to the dataset with given arguments
         and keywords.
 
-        :param func: object | callable
-        :return: completed - bool
+        :param func: Function to apply to the dataset, should be a callable
+        :param args: Positional arguments to pass to func
+        :param kwargs: Additional keywords to pass to func
+        :return: results - DataFrame | tuple | dict
         """
         if not callable(func):
             logging.warning(f"'handler' callable was expected, got '{type(func)}'")
             return False
 
-        df = func(self.df, *args, **kwargs)
-        if isinstance(df, DataFrame):
-            self.df = df
-            return True
-        logging.warning(f"'DataFrame' object was expected, got '{type(df)}'")
-        return False
+        results = func(self.df, *args, **kwargs)
+        if isinstance(results, DataFrame):
+            self.df = results
+        elif isinstance(results, tuple) and len(results) >= 1 and isinstance(results[0], DataFrame):
+            self.df = results[0]
+        elif isinstance(results, dict) and 'df' in results and (results['df'], DataFrame):
+            self.df = results['df']
+        else:
+            logging.warning(f"'DataFrame' object was expected, got '{type(results)}'")
+        return results
 
-    def split(self, random_seed: int) -> tuple:
+    def split(self, **kwargs) -> tuple:
         """
         Splits the dataset into train and test datasets.
 
-        :param random_seed: random seed, should be an int
+        :param kwargs: Additional keywords to pass to train_test_split
         :return: X_train, X_test, y_train, y_test - tuple[DataFrame]
         """
-        return split(self.getIndependent(), self.getDependent(), split_ratio=self.split_ratio, random_seed=random_seed,
-                     time_series=True)
+        X, y = self.getIndependent(), self.getDependent()
+        defaults = {'train_size': self.train_size}
+        return split(X, y, **dict(defaults, **kwargs))
 
     def getIndependent(self) -> DataFrame:
         """
