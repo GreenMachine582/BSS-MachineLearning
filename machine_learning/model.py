@@ -162,7 +162,6 @@ class Model(object):
         """
         cv_results = gridSearch(self.model, param_grid, cv=TimeSeriesSplit(10))
         cv_results.fit(X, y)
-        self.model = cv_results.best_estimator_
         return cv_results
 
     def fit(self, X_train: DataFrame, y_train: DataFrame) -> None:

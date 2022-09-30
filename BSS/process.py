@@ -103,7 +103,7 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
 
     # Line Plot
     plt.figure()
-    plt.plot(temp.index, temp['cnt'])
+    plt.plot(temp.index, temp['cnt'], color='blue')
     plt.title('BSS Demand Vs Datetime')
     plt.xlabel('Datetime')
     plt.ylabel('Cnt')
@@ -156,8 +156,8 @@ def processData(df: DataFrame) -> DataFrame:
     :return: df - DataFrame
     """
     # Adapts the dataset for time series
-    df.index = df['datetime']
-    df.drop('datetime', axis=1, inplace=True)
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    df.set_index('datetime', inplace=True)
 
     # Adds historical data
     df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
