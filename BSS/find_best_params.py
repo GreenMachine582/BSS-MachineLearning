@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn import ensemble, tree
 from sklearn.neural_network import MLPRegressor
 
 import BSS
@@ -14,16 +14,26 @@ local_dir = os.path.dirname(__file__)
 
 
 def getGradientBoostingRegressor(random_state):
-    # param_search = {'learning_rate': [((i + 1) * 0.01) for i in range(10)],
-    #                 'max_depth': [((i + 1) * 2) for i in range(6)],
-    #                 'n_estimators': [((i + 1) * 200) for i in range(10)],
-    #                 'subsample': [((i + 1) * 0.04) for i in range(25)]}
-    param_search = {'learning_rate': [0.01, 0.05, 0.75, 0.1, 0.15, 0.2],
-                    'loss': ['squared_error', 'absolute_error', 'huber', 'quantile'],
-                    'n_estimators': [100, 500, 800, 1000, 1200],
-                    'subsample': [0.10, 0.5, 1.0],
-                    'max_depth': [1, 3, 10, 50]}
-    return GradientBoostingRegressor(random_state=random_state), param_search
+    # 85.16% - {'learning_rate': 0.01, 'max_depth': 10, 'n_estimators': 1000, 'subsample': 0.5}
+    param_search = {'learning_rate': [0.005, 0.01, 0.05, 0.1, 0.2],
+                    'max_depth': [3, 10, 20, 25, 50],
+                    'n_estimators': [500, 800, 1000, 1200],
+                    'subsample': [0.10, 0.5, 0.7, 1.0]}
+    return ensemble.GradientBoostingRegressor(random_state=random_state), param_search
+
+
+def getRandomForestRegressor(random_state):
+    param_search = [{'criterion': ['squared_error', 'absolute_error', 'poisson']},
+                    {'max_depth': [3, 10, 20, 25, 50],
+                     'max_features': ['sqrt', 'log2', 'auto', 1.0]}]
+    return ensemble.RandomForestRegressor(random_state=random_state), param_search
+
+
+def getRandomForestClassifier(random_state):
+    param_search = [{'criterion': ['gini', 'entropy', 'log_loss']},
+                    {'max_depth': [3, 10, 20, 25, 50],
+                     'max_features': ['sqrt', 'log2', 'auto', None]}]
+    return ensemble.RandomForestRegressor(random_state=random_state), param_search
 
 
 def getMLPRegressor(random_state):
@@ -86,7 +96,7 @@ def main(dir_: str = local_dir):
     print('The best score: %.2f%s' % (cv_results.best_score_ * 100, '%'))
     print('The best params:', cv_results.best_params_)
 
-    model.update(model=GradientBoostingRegressor(**cv_results.best_params_))
+    model.update(model=ensemble.RandomForestRegressor(**cv_results.best_params_))
     model.fit(X_train, y_train)
     model.save()
 
