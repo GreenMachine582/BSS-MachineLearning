@@ -4,7 +4,7 @@ import logging
 import os
 
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.utils import Bunch
@@ -14,7 +14,7 @@ from . import utils
 
 def bunchToDataframe(fetched_df: Bunch, target: str = 'target') -> DataFrame | None:
     """
-    Creates a pandas DataFrame dataset from the SKLearn Bunch object.
+    Create a pandas DataFrame dataset from the SKLearn Bunch object.
 
     :param fetched_df: Dataset fetched from openml, should be a Bunch
     :param target: Dataset's target feature, should be a str
@@ -45,13 +45,14 @@ def load(dir_: str, name: str, names: list = None, target: str = 'target', sep: 
 
     path_, exist = utils.checkPath(dir_, name)
     if not exist:
+        logging.info("Fetching dataset from openml")
         try:
             fetched_dataset = fetch_openml(name.replace('.csv', ''), version=1)
         except Exception as e:
-            logging.warning(f"Path '{path_}' does not exist")
             logging.warning(e)
+            logging.warning(f"Path '{path_}' does not exist")
             return
-        logging.info("Fetched dataset from openml")
+        logging.info("Fetched")
         df = bunchToDataframe(fetched_dataset, target)
         utils.makePath(dir_)
         save(dir_, name, df, sep=sep)
@@ -63,7 +64,7 @@ def load(dir_: str, name: str, names: list = None, target: str = 'target', sep: 
 
 def save(dir_: str, name: str, df: DataFrame, sep: str = ',') -> bool:
     """
-    Saves the dataset to a csv file using pandas.
+    Save the dataset to a csv file using pandas.
 
     :param dir_: Directory path of file, should be a str
     :param name: Name of file, should be a str
@@ -81,14 +82,14 @@ def save(dir_: str, name: str, df: DataFrame, sep: str = ',') -> bool:
     return True
 
 
-def split(X: DataFrame, y: DataFrame, **kwargs) -> tuple:
+def split(X: DataFrame, y: Series, **kwargs) -> tuple:
     """
-    Splits the datasets into two smaller datasets with given ratio.
+    Split the datasets into two smaller datasets with given ratio.
 
     :param X: independent features, should be a DataFrame
-    :param y: dependent variables, should be a DataFrame
+    :param y: dependent variables, should be a Series
     :param kwargs: Additional keywords to pass to train_test_split
-    :return: X_train, X_test, y_train, y_test - tuple(DataFrame)
+    :return: X_train, X_test, y_train, y_test - tuple[DataFrame, DataFrame, Series, Series]
     """
     defaults = {'train_size': 0.8}
     X_train, X_test, y_train, y_test = train_test_split(X, y, **dict(defaults, **kwargs))
@@ -99,7 +100,7 @@ def split(X: DataFrame, y: DataFrame, **kwargs) -> tuple:
 
 def handleMissingData(df: DataFrame, fill: bool = True) -> DataFrame:
     """
-    Handles missing values by forward and backward value filling, this is a common
+    Handle missing values by forward and backward value filling, this is a common
     strategy for datasets with time series. Instances with remaining missing values
     will be dropped.
 
@@ -143,8 +144,7 @@ class Dataset(object):
 
     def update(self, **kwargs) -> None:
         """
-        Updates the instance attributes, if given attributes are present
-        in instance and match existing types.
+        Update the instance attributes.
 
         :key df: The dataset itself, should be a DataFrame
         :key dir_: Dataset's path directory, should be a str
@@ -155,21 +155,12 @@ class Dataset(object):
         :key train_size: Train and test split ratio, should be a float
         :return: None
         """
-        for key, value in kwargs.items():
-            if not hasattr(self, key):
-                logging.error(f"'{self.__class__.__name__}' object has no attribute '{key}'")
-            else:
-                attr_ = getattr(self, key)
-                if isinstance(attr_, (type(value), type(None))):
-                    setattr(self, key, value)
-                else:
-                    logging.error(f"'{key}': got '{type(value).__name__}' but expected type is "
-                                  f"'{type(attr_).__name__}'")
+        utils.update(self, kwargs)
         logging.info(f"Updated dataset '{self.name}' attributes")
 
     def load(self) -> bool:
         """
-        Loads the dataset.
+        Load the dataset.
 
         :return: completed - bool
         """
@@ -183,7 +174,7 @@ class Dataset(object):
 
     def save(self) -> bool:
         """
-        Saves the dataset.
+        Save the dataset.
 
         :return: completed - bool
         """
@@ -197,7 +188,7 @@ class Dataset(object):
 
     def apply(self, func: callable, *args, **kwargs) -> DataFrame | tuple | dict:
         """
-        Applies the given function to the dataset with given arguments
+        Apply the given function to the dataset with given arguments
         and keywords.
 
         :param func: Function to apply to the dataset, should be a callable
@@ -214,7 +205,7 @@ class Dataset(object):
             self.df = results
         elif isinstance(results, tuple) and len(results) >= 1 and isinstance(results[0], DataFrame):
             self.df = results[0]
-        elif isinstance(results, dict) and 'df' in results and (results['df'], DataFrame):
+        elif isinstance(results, dict) and 'df' in results and isinstance(results['df'], DataFrame):
             self.df = results['df']
         else:
             logging.warning(f"'DataFrame' object was expected, got '{type(results)}'")
@@ -222,7 +213,7 @@ class Dataset(object):
 
     def split(self, **kwargs) -> tuple:
         """
-        Splits the dataset into train and test datasets.
+        Split the dataset into train and test datasets.
 
         :param kwargs: Additional keywords to pass to train_test_split
         :return: X_train, X_test, y_train, y_test - tuple[DataFrame]
@@ -233,16 +224,16 @@ class Dataset(object):
 
     def getIndependent(self) -> DataFrame:
         """
-        Gets the independent features.
+        Get the independent features.
 
         :return: independent - DataFrame
         """
         return self.df.drop(self.target, axis=1)
 
-    def getDependent(self) -> DataFrame:
+    def getDependent(self) -> Series:
         """
-        Gets the dependent variables.
+        Get the dependent variables.
 
-        :return: dependent - DataFrame
+        :return: dependent - Series
         """
         return self.df[self.target]

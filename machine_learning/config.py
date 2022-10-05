@@ -13,7 +13,7 @@ class Config(object):
 
     def __init__(self, dir_: str, name: str, **kwargs) -> None:
         """
-        Create an instance of Dataset
+        Create an instance of Dataset.
 
         :param dir_: dataset's path directory, should be a str
         :param name: dataset's name, should be a str
@@ -30,7 +30,7 @@ class Config(object):
                         'name': name,
                         'sep': ',',
                         'names': [],
-                        'target': 'cnt',
+                        'target': 'target',
                         'train_size': 0.8}
 
         # Default configuration for Model
@@ -44,8 +44,7 @@ class Config(object):
 
     def update(self, **kwargs) -> None:
         """
-        Updates the instance attributes, if given attributes are present
-        in instance and match existing types.
+        Update the instance attributes.
 
         :key dir_: dataset's path directory, should be a str
         :key name: dataset's name, should be a str
@@ -53,26 +52,17 @@ class Config(object):
         :key model: config for model, should be a dict
         :return: None
         """
-        for key, value in kwargs.items():
-            if not hasattr(self, key):
-                logging.error(f"'{self.__class__.__name__}' object has no attribute '{key}'")
-            else:
-                attr_ = getattr(self, key)
-                if isinstance(attr_, (type(value), type(None))):
-                    setattr(self, key, value)
-                else:
-                    logging.error(f"'{key}': got '{type(value).__name__}' but expected type is "
-                                  f"'{type(attr_).__name__}'")
+        utils.update(self, kwargs)
         logging.info(f"Updated config '{self.name}' attributes")
 
     def load(self) -> bool:
         """
-        Loads the config file and updates the object attributes.
+        Load the config file and updates the object attributes.
 
         :return: completed - bool
         """
         name = utils.joinPath(self.name, ext='.json')
-        data = utils.load(self.dir_, name)
+        data = utils.load(self.dir_, name, errors='ignore')
         if data is None:
             logging.warning(f"Failed to load config '{self.name}'")
             return False
@@ -81,7 +71,7 @@ class Config(object):
 
     def save(self) -> bool:
         """
-        Saves the config attributes as an indented dict in a json file, to allow
+        Save the config attributes as an indented dict in a json file, to allow
         users to edit and easily view the default configs.
 
         :return: completed - bool
