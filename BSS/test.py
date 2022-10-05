@@ -1,11 +1,7 @@
-
 import logging
 import os
 
-import pandas as pd
-from matplotlib import pyplot as plt
-from numpy import ndarray
-from pandas import DataFrame
+import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS
@@ -15,36 +11,43 @@ import machine_learning as ml
 local_dir = os.path.dirname(__file__)
 
 
-def plotPredictions(df: DataFrame, X_test: DataFrame, y_pred: ndarray) -> None:
-    """
-    Plots the BSS daily demand and predictions.
+def biasVarianceDecomp(model, X_train, X_test, y_train, y_test):
+    n_repeat = 20  # Number of iterations
 
-    :param df: the dataset itself, should be a DataFrame
-    :param X_test: testing independent features, should be a DataFrame
-    :param y_pred: predicted dependent variables, should be a ndarray
-    :return: None
-    """
-    # plots a line graph of BSS True and Predicted Demand vs Date
-    plt.figure()
+    y_test = np.array(y_test)
+    all_pred = np.zeros((n_repeat, y_test.size))
+    for j in range(n_repeat):
+        all_pred[j] = model.fit(X_train, y_train).predict(X_test)
 
-    # Groups hourly instance into summed days, makes it easier to plot
-    temp = DataFrame({'datetime': pd.to_datetime(df.index), 'cnt': df['cnt']})
-    temp = temp.groupby(temp['datetime'].dt.date).sum()
-    plt.plot(temp.index, temp['cnt'], color='blue')
+    avg_preds = np.mean(all_pred, axis=0)
+    avg_expected_loss = np.apply_along_axis(lambda x: ((x - y_test) ** 2).mean(), axis=1, arr=all_pred).mean()
+    avg_bias = np.sum((avg_preds - y_test) ** 2) / y_test.size
+    avg_var = np.sum((avg_preds - all_pred) ** 2) / all_pred.size
+    return avg_expected_loss, avg_bias, avg_var
 
-    # Groups hourly instance into summed days, makes it easier to plot
-    temp = DataFrame({'datetime': pd.to_datetime(X_test.index), 'y_pred': y_pred})
-    temp = temp.groupby(temp['datetime'].dt.date).sum()
-    plt.plot(temp.index, temp['y_pred'], color='red')
 
-    plt.title('BSS Demand Vs Datetime')
-    plt.xlabel('Datetime')
-    plt.ylabel('Cnt')
-    plt.show()
+# def bullseyePlot(bias, variance):
+#     fig, ax = plt.subplots()
+#
+#     max_value = max(max(bias), max(variance))
+#     max_value += max_value * 0.10
+#     circle1 = plt.Circle((0, 0), max_value * 0.3, color='green', alpha=0.3)
+#     circle2 = plt.Circle((0, 0), max_value * 0.6, color='yellow', alpha=0.3)
+#     circle3 = plt.Circle((0, 0), max_value * 0.9, color='red', alpha=0.3)
+#
+#     ax.add_artist(circle3)
+#     ax.add_artist(circle2)
+#     ax.add_artist(circle1)
+#
+#     plt.scatter(bias, variance)
+#     plt.axis([-max_value, max_value, -max_value, max_value])
+#
+#     plt.show()
 
 
 def main(dir_=local_dir):
     config = ml.Config(dir_, 'Bike-Sharing-Dataset-hour')
+    # config = ml.Config(dir_, 'london_merged-hour')
 
     dataset = ml.Dataset(config.dataset)
     if not dataset.load():
@@ -52,22 +55,30 @@ def main(dir_=local_dir):
 
     dataset = BSS.processDataset(dataset)
 
-    X, y = dataset.getIndependent(), dataset.getDependent()
     X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
 
     model = ml.Model(config.model, model=GradientBoostingRegressor(random_state=config.random_state))
-    param_grid = {'loss': ['squared_error', 'absolute_error']}
+    param_grid = {'learning_rate': [0.01], 'max_depth': [10], 'n_estimators': [1000], 'subsample': [0.5]}
 
-    cv_results = model.gridSearch(param_grid, X, y)
+    cv_results = model.gridSearch(param_grid, X_train, y_train)
     print('The best estimator:', cv_results.best_estimator_)
     print('The best score: %.2f%s' % (cv_results.best_score_ * 100, '%'))
     print('The best params:', cv_results.best_params_)
 
+    error, bias, var = biasVarianceDecomp(GradientBoostingRegressor(**cv_results.best_params_),
+                                          X_train, X_test, y_train, y_test)
+
+    print('Error: %.4f' % error)
+    print('Bias: %.4f' % bias)
+    print('Variance: %.4f' % var)
+
+    model.update(model=cv_results.best_estimator_)
+    model.model.fit(X_train, y_train)
     model.save()
 
-    y_pred = model.predict(X_test)
-    ml.resultAnalysis(y_test, y_pred)
-    plotPredictions(dataset.df, X_test, y_pred)
+    y_pred = model.model.predict(X_test)
+    BSS.estimator.resultAnalysis(y_test, y_pred)
+    BSS.estimator.plotPredictions(y_train, y_test, y_pred)
 
     logging.info(f"Completed")
     return
