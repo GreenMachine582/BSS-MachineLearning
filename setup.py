@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='bss-machinelearning',
-    version='v0.4.1',
+    version='v0.4.2',
     author='Matthew Johnson, Noel Williams, Yisha Chen, Yuki-Jiayi Li',
     author_email='greenchicken1902@gmail.com, noelosdub@gmail.com',
     maintainer='Matthew Johnson',
@@ -26,6 +26,6 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only'
     ],
-    keywords='bss, machine-learning, cross-validation, neural-network, regression, clustering',
+    keywords='bss, machine-learning, cross-validation, classifiers, estimators',
     python_requires='>=3.10, <4',
 )

@@ -3,17 +3,16 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from copy import deepcopy
 from time import time
-import warnings
 
 import BSS
-
-warnings.simplefilter(action='ignore', category=FutureWarning)
+import machine_learning as ml
 
 # Sets up the in-built logger to record key information and save it to a text file
 logging.basicConfig(level=logging.INFO, filename='log.txt', filemode='w',
                     format="%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - '%(message)s'")
-# logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Outputs the loggings into screen output
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))  # Outputs the loggings into screen output
 
 # Constants
 ROOT_DIR = os.path.dirname(__file__)
@@ -36,16 +35,26 @@ def main() -> None:
     :return:
         - None
     """
+    config = ml.Config(ROOT_DIR, 'Bike-Sharing-Dataset-hour')
+
+    dataset = ml.Dataset(config.dataset)
+    if not dataset.load():
+        raise Exception("Failed to load dataset")
+
+    dataset = BSS.processDataset(dataset)
+
     run = True
     while run:
         print("""
         0 - Quit
         1 - Testing
-        2 - Data Processing
-        3 - Select Model
-        4 - Find best params
+        2 - Process Datasets (Includes EDA)
+        3 - Compare Estimators
+        4 - Compare Classifiers
+        5 - Find best params
+        6 - Staged Predict
         """)
-        choice = input("Which question number: ")
+        choice = input("Which option number: ")
         try:
             choice = int(choice)
         except ValueError:
@@ -60,9 +69,13 @@ def main() -> None:
             elif choice == 2:
                 BSS.process.main(ROOT_DIR)
             elif choice == 3:
-                BSS.select_model.main(ROOT_DIR)
+                BSS.compare_models.compareEstimators(deepcopy(dataset), config.random_state)
             elif choice == 4:
+                BSS.compare_models.compareClassifiers(deepcopy(dataset), config.random_state)
+            elif choice == 5:
                 BSS.find_best_params.main(ROOT_DIR)
+            elif choice == 6:
+                BSS.staged_predict.main(deepcopy(dataset), config)
             else:
                 print("\nPlease enter a valid choice!")
 

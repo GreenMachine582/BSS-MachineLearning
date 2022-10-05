@@ -6,7 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 import machine_learning as ml
 from machine_learning import Dataset
@@ -68,6 +68,8 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
         df['hum'] = df['hum'].apply(lambda x: round(min(100, max(0, x)) / 100, 4))
         df['wind_speed'] = df['wind_speed'].apply(lambda x: round(min(67, max(0, x)) / 67, 4))
 
+    df.set_index('datetime', drop=False, inplace=True)
+
     logging.info(f"Pre-Processed {name} dataset")
     return df
 
@@ -84,7 +86,7 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     logging.info("Exploratory Data Analysis")
 
     plt.figure()
-    sns.heatmap(df.drop('datetime', axis=1).corr(), annot=True)
+    sns.heatmap(df.corr(), annot=True)
     plt.title('Pre-Processed Corresponding Matrix')
 
     # Month/Day Plot
@@ -92,19 +94,18 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     sns.barplot(x='mnth', y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Month', fontsize=14)
     ax1.set_ylabel('Cnt', fontsize=14)
-    sns.lineplot(pd.DatetimeIndex(df['datetime']).day, y='cnt', data=df, ax=ax2)
+    sns.lineplot(pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
     ax2.set_xlabel('Day', fontsize=14)
     ax2.set_ylabel('Cnt', fontsize=14)
     plt.suptitle("BSS Demand")
 
-    # Groups hourly instance into summed days, makes it easier to plot the line graph
-    temp = DataFrame({'datetime': df['datetime'], 'cnt': df['cnt']})
-    temp = temp.groupby(temp['datetime'].dt.date).sum()
-
     # Line Plot
     plt.figure()
-    plt.plot(temp.index, temp['cnt'], color='blue')
-    plt.title('BSS Demand Vs Datetime')
+    # Groups BSS hourly instances into summed days, makes it easier to
+    #   plot the line graph.
+    temp = Series(df['cnt'], index=df.index).resample('D').sum()
+    plt.plot(temp.index, temp, color='blue')
+    plt.title('BSS Demand Vs Date')
     plt.xlabel('Datetime')
     plt.ylabel('Cnt')
     plt.show()
@@ -155,9 +156,9 @@ def processData(df: DataFrame) -> DataFrame:
     :param df: BSS dataset, should be a DataFrame
     :return: df - DataFrame
     """
-    # Adapts the dataset for time series
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df.set_index('datetime', inplace=True)
+    if 'datetime' in df.columns:
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        df.set_index('datetime', inplace=True)
 
     # Adds historical data
     df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
@@ -219,15 +220,18 @@ def main(dir_: str = local_dir) -> None:
         if not dataset.load():
             return
 
+        print(dataset.df.shape)
         print(dataset.df.head())
         dataset.apply(preProcess, name)
-        dataset.update(name=name + '-pre-processed')
+        dataset.update(name=(name + '-pre-processed'))
         dataset.save()
+
+        dataset.df.drop('datetime', axis=1, inplace=True)
 
         exploratoryDataAnalysis(dataset.df)
 
         dataset.apply(processData)
-        dataset.update(name=name + '-processed')
+        dataset.update(name=(name + '-processed'))
         print(dataset.df.axes)
         print(dataset.df.head())
         plt.figure()
@@ -241,7 +245,3 @@ def main(dir_: str = local_dir) -> None:
         sns.heatmap(dataset.df.corr(), annot=True)
         plt.title('Processed and Encoded Corresponding Matrix')
         plt.show()
-
-
-if __name__ == '__main__':
-    main()
