@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from matplotlib import pyplot as plt
 from numpy import ndarray
@@ -9,26 +8,29 @@ from pandas import DataFrame, Series
 from seaborn import heatmap
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 
-# Constants
-local_dir = os.path.dirname(__file__)
 
-
-def convertToCategorical(df: DataFrame) -> DataFrame:
+def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     """
-    Encode the BSS cnt into a binary category where,
-    0 represents a fall in price from previous instance
-    1 represents a rise in price from previous instance.
+    Encodes the target into a binary category where,
+    0 represents a decrease from previous instance
+    1 represents an increase from previous instance.
 
-    :param df: The BTC dataset, should be a DataFrame
+    :param df: The dataset, should be a DataFrame
+    :param target: The dataset's target value, should be a str
     :return: df - DataFrame
     """
-    df['cnt'] = [0 if df['diff'][i] < 0 else 1 for i in range(len(df['cnt']))]
+    if df[target].dtype not in ['float64', 'int64']:
+        logging.warning("The target values are not compatible")
+        return df
+
+    df[target] = [int(df[target][max(0, i - 1)] < df[target][min(len(df[target]) - 1, i)])
+                  for i in range(len(df[target]))]
 
     # Checks for class imbalance
-    if len(df['cnt'] == 0) != len(df['cnt'] == 1):
+    if len(df[target] == 0) != len(df[target] == 1):
         logging.warning("Class imbalance is present")
 
-    df['cnt'] = df['cnt'].astype("category")
+    df[target] = df[target].astype("category")
     return df
 
 
