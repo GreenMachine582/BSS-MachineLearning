@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -12,9 +11,6 @@ import machine_learning as ml
 from machine_learning import Dataset
 
 sns.set(style='darkgrid')
-
-# Constants
-local_dir = os.path.dirname(__file__)
 
 
 def preProcess(df: DataFrame, name: str) -> DataFrame:
@@ -77,7 +73,7 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
 def exploratoryDataAnalysis(df: DataFrame) -> None:
     """
     Performs initial investigations on data to discover patterns, to spot
-    anomalies,to test hypothesis and to check assumptions with the help
+    anomalies, to test hypothesis and to check assumptions with the help
     of summary statistics and graphical representations.
 
     :param df: BSS dataset, should be a DataFrame
@@ -161,10 +157,10 @@ def processData(df: DataFrame) -> DataFrame:
         df.set_index('datetime', inplace=True)
 
     # Adds historical data
-    df.loc[:, 'prev'] = df.loc[:, 'cnt'].shift()
-    df.loc[:, 'diff'] = df.loc[:, 'prev'].diff()
-    df.loc[:, 'prev-2'] = df.loc[:, 'prev'].shift()
-    df.loc[:, 'diff-2'] = df.loc[:, 'prev-2'].diff()
+    df['prev'] = df['Close'].shift()
+    df['diff'] = df['Close'].diff()
+    df['prev-2'] = df['prev'].shift()
+    df['diff-2'] = df['prev'].diff()
 
     df = ml.handleMissingData(df)
 
@@ -204,7 +200,7 @@ def processDataset(dataset: Dataset, overwrite: bool = False) -> Dataset:
     return dataset
 
 
-def main(dir_: str = local_dir) -> None:
+def main(dir_: str) -> None:
     """
     Pre-processes and Processes the datasets.
 
