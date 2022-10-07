@@ -1,4 +1,4 @@
 
-from . import find_best_params, process, test, staged_predict, compare_models, estimator, classifier
+from . import classifier, compare_models, compare_params, estimator, process, test, staged_predict
 from .process import processDataset
-from .classifier import convertToCategorical
+from .classifier import binaryEncode

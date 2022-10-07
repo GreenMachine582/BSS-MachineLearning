@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,9 +8,6 @@ from numpy import ndarray
 from pandas import Series
 from sklearn.metrics import explained_variance_score, mean_squared_log_error, r2_score, mean_absolute_error,\
     mean_squared_error
-
-# Constants
-local_dir = os.path.dirname(__file__)
 
 
 def plotPredictions(y_train: Series, y_test: Series, y_pred: ndarray) -> None:
@@ -37,7 +33,7 @@ def plotPredictions(y_train: Series, y_test: Series, y_pred: ndarray) -> None:
     plt.legend()
 
     plt.figure()
-    plt.plot(temp_y_test.index, temp_y_test['cnt'], c='r', label='Test')
+    plt.plot(temp_y_test.index, temp_y_test, c='r', label='Test')
     plt.plot(temp_y_pred.index, temp_y_pred, c='g', label=f"Predictions")
     plt.title('BSS Predicted Demand (Closeup)')
     plt.xlabel('Date')

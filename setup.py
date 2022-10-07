@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='bss-machinelearning',
-    version='v0.4.2',
+    version='v0.4.3',
     author='Matthew Johnson, Noel Williams, Yisha Chen, Yuki-Jiayi Li',
     author_email='greenchicken1902@gmail.com, noelosdub@gmail.com',
     maintainer='Matthew Johnson',

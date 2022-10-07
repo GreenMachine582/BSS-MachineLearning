@@ -216,7 +216,7 @@ class Dataset(object):
         Split the dataset into train and test datasets.
 
         :param kwargs: Additional keywords to pass to train_test_split
-        :return: X_train, X_test, y_train, y_test - tuple[DataFrame]
+        :return: X_train, X_test, y_train, y_test - tuple[DataFrame, DataFrame, Series, Series]
         """
         X, y = self.getIndependent(), self.getDependent()
         defaults = {'train_size': self.train_size}

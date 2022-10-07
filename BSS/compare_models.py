@@ -251,7 +251,7 @@ def compareClassifiers(dataset: Dataset, random_state: int = None) -> None:
     :param random_state: Controls the random seed, should be an int
     :return: None
     """
-    dataset.apply(BSS.convertToCategorical)
+    dataset.apply(BSS.binaryEncode)
 
     X_train, X_test, y_train, y_test = dataset.split(train_size=0.1, random_state=random_state, shuffle=False)
 
