@@ -2,6 +2,7 @@ import logging
 import os
 
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS
@@ -11,13 +12,10 @@ import machine_learning as ml
 local_dir = os.path.dirname(__file__)
 
 
-def biasVarianceDecomp(model, X_train, X_test, y_train, y_test):
-    n_repeat = 20  # Number of iterations
-
-    y_test = np.array(y_test)
-    all_pred = np.zeros((n_repeat, y_test.size))
-    for j in range(n_repeat):
-        all_pred[j] = model.fit(X_train, y_train).predict(X_test)
+def biasVarianceDecomp(model, X_train, X_test, y_train, y_test, n_iter=5):
+    all_pred = np.zeros((n_iter, y_test.size))
+    for i in range(n_iter):
+        all_pred[i] = model.fit(X_train, y_train).predict(X_test)
 
     avg_preds = np.mean(all_pred, axis=0)
     avg_expected_loss = np.apply_along_axis(lambda x: ((x - y_test) ** 2).mean(), axis=1, arr=all_pred).mean()
@@ -26,23 +24,24 @@ def biasVarianceDecomp(model, X_train, X_test, y_train, y_test):
     return avg_expected_loss, avg_bias, avg_var
 
 
-# def bullseyePlot(bias, variance):
-#     fig, ax = plt.subplots()
-#
-#     max_value = max(max(bias), max(variance))
-#     max_value += max_value * 0.10
-#     circle1 = plt.Circle((0, 0), max_value * 0.3, color='green', alpha=0.3)
-#     circle2 = plt.Circle((0, 0), max_value * 0.6, color='yellow', alpha=0.3)
-#     circle3 = plt.Circle((0, 0), max_value * 0.9, color='red', alpha=0.3)
-#
-#     ax.add_artist(circle3)
-#     ax.add_artist(circle2)
-#     ax.add_artist(circle1)
-#
-#     plt.scatter(bias, variance)
-#     plt.axis([-max_value, max_value, -max_value, max_value])
-#
-#     plt.show()
+def _plotBullseye(ax, x, y, title=''):
+    circle1 = plt.Circle((0, 0), 0.08, color='red', alpha=0.6)
+    circle2 = plt.Circle((0, 0), 0.25, color='blue', linewidth=0.8, alpha=0.3, fill=False)
+    circle3 = plt.Circle((0, 0), 0.55, color='red', linewidth=0.8, alpha=0.3, fill=False)
+    circle4 = plt.Circle((0, 0), 0.85, color='blue', linewidth=0.8, alpha=0.3, fill=False)
+    ax.add_artist(circle4)
+    ax.add_artist(circle3)
+    ax.add_artist(circle2)
+    ax.add_artist(circle1)
+
+    ax.set_aspect('equal')
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax.title(title)
+
+    ax.scatter(x, y, c='g')
+    ax.axis([-1, 1, -1, 1])
+    return ax
 
 
 def main(dir_=local_dir):
@@ -57,28 +56,32 @@ def main(dir_=local_dir):
 
     X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
 
-    model = ml.Model(config.model, model=GradientBoostingRegressor(random_state=config.random_state))
-    param_grid = {'learning_rate': [0.01], 'max_depth': [10], 'n_estimators': [1000], 'subsample': [0.5]}
+    best_params = {'criterion': 'squared_error',
+                   'learning_rate': 0.078,
+                   'max_depth': 2,
+                   'n_estimators': 1050,
+                   'subsample': 0.3}
 
-    cv_results = model.gridSearch(param_grid, X_train, y_train)
-    print('The best estimator:', cv_results.best_estimator_)
-    print('The best score: %.2f%s' % (cv_results.best_score_ * 100, '%'))
-    print('The best params:', cv_results.best_params_)
+    loss, bias, var = [], [], []
+    for _ in range(10):
+        avg_expected_loss, avg_bias, avg_var = biasVarianceDecomp(GradientBoostingRegressor(**best_params),
+                                                                  X_train, X_test, y_train, y_test,
+                                                                  n_iter=2)
+        # print('Average expected loss: %.3f' % avg_expected_loss)
+        # print('Average bias: %.3f' % avg_bias)
+        # print('Average variance: %.3f' % avg_var)
+        loss.append(avg_expected_loss)
+        bias.append(avg_bias)
+        var.append(avg_var)
 
-    error, bias, var = biasVarianceDecomp(GradientBoostingRegressor(**cv_results.best_params_),
-                                          X_train, X_test, y_train, y_test)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 
-    print('Error: %.4f' % error)
-    print('Bias: %.4f' % bias)
-    print('Variance: %.4f' % var)
+    _plotBullseye(ax1, bias[0], var[0], names[0])
+    # _plotBullseye(ax2, bias[1], var[1], names[1])
+    # _plotBullseye(ax3, bias[2], var[2], names[2])
+    # _plotBullseye(ax4, bias[3], var[3], names[3])
 
-    model.update(model=cv_results.best_estimator_)
-    model.model.fit(X_train, y_train)
-    model.save()
-
-    y_pred = model.model.predict(X_test)
-    BSS.estimator.resultAnalysis(y_test, y_pred)
-    BSS.estimator.plotPredictions(y_train, y_test, y_pred)
+    plt.show()
 
     logging.info(f"Completed")
     return

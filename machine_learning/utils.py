@@ -103,10 +103,11 @@ def load(dir_: str, name: str, errors: str = 'raise') -> Any:
         return
 
     if ext == '.json':
-        with open(path_, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        with open(path_, 'r', encoding='utf-8') as file:
+            data = json.load(file)
     else:
-        data = pickle.load(open(path_, "rb"))
+        with open(path_, 'rb') as file:
+            data = pickle.load(file)
     logging.info(f"File '{name}' data was loaded")
     return data
 
@@ -142,10 +143,11 @@ def save(dir_: str, name: str, data: Any, indent: int = 4, errors: str = 'raise'
         return False
 
     if ext == '.json':
-        with open(path_, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=indent)
+        with open(path_, 'w', encoding='utf-8') as file:
+            json.dump(data, file, indent=indent)
     elif isinstance(data, object):
-        pickle.dump(data, open(path_, "wb"))
+        with open(path_, 'wb') as file:
+            pickle.dump(data, file, pickle.HIGHEST_PROTOCOL)
     else:
         logging.warning(f"Saving method was not determined, failed to save file")
         if errors == 'raise':

@@ -134,6 +134,7 @@ class Dataset(object):
         """
         self.df: DataFrame | None = None
         self.dir_: str = ''
+        self.folder_name: str = ''
         self.name: str = ''
         self.sep: str = ''
         self.names: list[str] = []
@@ -147,7 +148,8 @@ class Dataset(object):
         Update the instance attributes.
 
         :key df: The dataset itself, should be a DataFrame
-        :key dir_: Dataset's path directory, should be a str
+        :key dir_: Projects path directory, should be a str
+        :key folder_name: Dataset's folder name, should be a str
         :key name: Dataset's name, should be a str
         :key sep: Dataset's seperator, should be a str
         :key names: Dataset's feature names, should be a list[str]
@@ -165,7 +167,7 @@ class Dataset(object):
         :return: completed - bool
         """
         name = utils.joinPath(self.name, ext='.csv')
-        df = load(self.dir_, name, target=self.target, sep=self.sep)
+        df = load(utils.joinPath(self.dir_, self.folder_name), name, target=self.target, sep=self.sep)
         if isinstance(df, DataFrame):
             self.df = df
             return True
@@ -178,10 +180,10 @@ class Dataset(object):
 
         :return: completed - bool
         """
-        utils.makePath(self.dir_)
+        path_ = utils.makePath(self.dir_, self.folder_name)
         name = utils.joinPath(self.name, ext='.csv')
 
-        completed = save(self.dir_, name, self.df, sep=self.sep)
+        completed = save(path_, name, self.df, sep=self.sep)
         if not completed:
             logging.warning(f"Failed to save dataset '{self.name}'")
         return completed

@@ -49,10 +49,11 @@ def main() -> None:
         0 - Quit
         1 - Testing
         2 - Process Datasets (Includes EDA)
-        3 - Compare Estimators
-        4 - Compare Classifiers
-        5 - Find best params
-        6 - Staged Predict
+        3 - Compare Default Estimators
+        4 - Compare Default Classifiers
+        5 - Compare Estimator Params
+        6 - Compare Classifier Params
+        7 - Staged Predict
         """)
         choice = input("Which option number: ")
         try:
@@ -73,8 +74,10 @@ def main() -> None:
             elif choice == 4:
                 BSS.compare_models.compareClassifiers(deepcopy(dataset), config.random_state)
             elif choice == 5:
-                BSS.find_best_params.main(ROOT_DIR)
+                BSS.compare_params.findEstimatorParams(deepcopy(dataset), config)
             elif choice == 6:
+                BSS.compare_params.findEstimatorParams(deepcopy(dataset), config)
+            elif choice == 7:
                 BSS.staged_predict.main(deepcopy(dataset), config)
             else:
                 print("\nPlease enter a valid choice!")

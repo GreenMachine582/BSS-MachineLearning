@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -14,9 +13,6 @@ from sklearn.model_selection import TimeSeriesSplit, cross_validate
 
 import BSS
 from machine_learning import Dataset
-
-# Constants
-local_dir = os.path.dirname(__file__)
 
 
 def compareModels(models: dict, X_train: DataFrame, y_train: Series) -> dict:
@@ -166,8 +162,8 @@ def compareEstimators(dataset: Dataset, random_state: int = None) -> None:
     results = compareModels(estimators, X_train, y_train)
 
     # removes estimators that performed poorly
+    del results['KNR']
     del results['SVR']
-    del results['DTR']
     del results['ETR']
 
     plt.figure()
@@ -223,7 +219,7 @@ def plotClassifications(y_test: Series, names: list, predictions: list) -> None:
         logging.warning(f"Incorrect number of names and predictions")
         return
 
-    # Heatmaps
+    # Heatmaps of confusion matrices
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     cm = confusion_matrix(y_test, predictions[0])
     heatmap(cm / np.sum(cm), square=True, annot=True, fmt='.2%', cbar=False, ax=ax1)
@@ -251,7 +247,7 @@ def compareClassifiers(dataset: Dataset, random_state: int = None) -> None:
     :param random_state: Controls the random seed, should be an int
     :return: None
     """
-    dataset.apply(BSS.binaryEncode)
+    dataset.apply(BSS.binaryEncode, dataset.target)
 
     X_train, X_test, y_train, y_test = dataset.split(train_size=0.1, random_state=random_state, shuffle=False)
 

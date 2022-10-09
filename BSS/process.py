@@ -19,7 +19,7 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
     datatypes, normalising values and handling invalid instances.
 
     :param df: BSS dataset, should be a DataFrame
-    :param name: dataset's filename, should be a str
+    :param name: Dataset's filename, should be a str
     :return: df - DataFrame
     """
     df = ml.handleMissingData(df)
@@ -90,32 +90,33 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     sns.barplot(x='mnth', y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Month', fontsize=14)
     ax1.set_ylabel('Cnt', fontsize=14)
-    sns.lineplot(pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
+    sns.lineplot(x=pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
     ax2.set_xlabel('Day', fontsize=14)
     ax2.set_ylabel('Cnt', fontsize=14)
     plt.suptitle("BSS Demand")
 
-    # Line Plot
-    plt.figure()
     # Groups BSS hourly instances into summed days, makes it easier to
     #   plot the line graph.
     temp = Series(df['cnt'], index=df.index).resample('D').sum()
+
+    # Plots BSS daily demand
+    plt.figure()
     plt.plot(temp.index, temp, color='blue')
     plt.title('BSS Demand Vs Date')
     plt.xlabel('Datetime')
     plt.ylabel('Cnt')
     plt.show()
 
-    # Bar Plots
+    # Plots BSS Demand of weather codes
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
-    sns.barplot(df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
+    sns.barplot(x=df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Feel Temperature', fontsize=14)
     ax1.set_ylabel('Cnt', fontsize=14)
     sns.barplot(x='weather_code', y='cnt', data=df, ax=ax2)
     ax2.set_xlabel('Weather Codes', fontsize=14)
     plt.suptitle("BSS Demand")
 
-    # Box plots
+    # Plots BSS Demand of weekday and weekend
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1, 1]})
     sns.boxplot(x='season', y='cnt', data=df, ax=ax1)
     ax1.set_xlabel('Season', fontsize=14)
@@ -126,6 +127,7 @@ def exploratoryDataAnalysis(df: DataFrame) -> None:
     ax3.set_xlabel('Weekday Vs Weekend', fontsize=14)
     plt.suptitle("BSS Demand")
 
+    # Plots Normalised Environmental Values
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(6, 4), sharey='row')
     sns.boxplot(y=df['temp'], ax=ax1)
     ax1.set_ylabel('Temp', fontsize=14)
@@ -157,8 +159,8 @@ def processData(df: DataFrame) -> DataFrame:
         df.set_index('datetime', inplace=True)
 
     # Adds historical data
-    df['prev'] = df['Close'].shift()
-    df['diff'] = df['Close'].diff()
+    df['prev'] = df['cnt'].shift()
+    df['diff'] = df['cnt'].diff()
     df['prev-2'] = df['prev'].shift()
     df['diff-2'] = df['prev'].diff()
 
@@ -182,8 +184,8 @@ def processDataset(dataset: Dataset, overwrite: bool = False) -> Dataset:
     """
     Pre-processes the dataset if applicable, then processes the dataset.
 
-    :param dataset: the dataset, should be a Dataset
-    :param overwrite: overwrite existing file, should be a bool
+    :param dataset: BSS dataset, should be a Dataset
+    :param overwrite: Overwrite existing file, should be a bool
     :return: dataset - Dataset
     """
     name = dataset.name
@@ -204,7 +206,7 @@ def main(dir_: str) -> None:
     """
     Pre-processes and Processes the datasets.
 
-    :param dir_: project's path directory, should be a str
+    :param dir_: Project's path directory, should be a str
     :return: None
     """
     datasets = ['Bike-Sharing-Dataset-day', 'Bike-Sharing-Dataset-hour', 'london_merged-hour']
@@ -214,7 +216,7 @@ def main(dir_: str) -> None:
         # Loads the BSS dataset
         dataset = ml.Dataset(config.dataset)
         if not dataset.load():
-            return
+            raise Exception("Failed to load dataset")
 
         print(dataset.df.shape)
         print(dataset.df.head())
