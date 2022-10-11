@@ -98,24 +98,24 @@ def split(X: DataFrame, y: Series, **kwargs) -> tuple:
     return X_train, X_test, y_train, y_test
 
 
-def handleMissingData(df: DataFrame, fill: bool = True) -> DataFrame:
+def handleMissingData(df: DataFrame, fill_limit: int = 1) -> DataFrame:
     """
     Handle missing values by forward and backward value filling, this is a common
     strategy for datasets with time series. Instances with remaining missing values
     will be dropped.
 
     :param df: the dataset itself, should be a DataFrame
-    :param fill: fill missing data with surrounding values, should be a bool
+    :param fill_limit: Maximum number of consecutive NaN values to forward/backward fill, should be an int
     :return: df - DataFrame
     """
     logging.info(f"Handling missing values")
 
     missing_sum = df.isnull().sum()
     if missing_sum.sum() > 0:
-        if fill:
+        if fill_limit > 0:
             # fills the missing value with the next or previous instance value
-            df.fillna(method="ffill", limit=1, inplace=True)  # forward fill
-            df.fillna(method="bfill", limit=1, inplace=True)  # backward fill
+            df.fillna(method="ffill", limit=fill_limit, inplace=True)  # forward fill
+            df.fillna(method="bfill", limit=fill_limit, inplace=True)  # backward fill
 
         # removes remaining instances with missing values
         df.dropna(inplace=True)
@@ -123,6 +123,8 @@ def handleMissingData(df: DataFrame, fill: bool = True) -> DataFrame:
 
 
 class Dataset(object):
+    EXT = '.csv'
+    FOLDER_NAME = 'datasets'
 
     def __init__(self, config: dict, **kwargs) -> None:
         """
@@ -134,7 +136,6 @@ class Dataset(object):
         """
         self.df: DataFrame | None = None
         self.dir_: str = ''
-        self.folder_name: str = ''
         self.name: str = ''
         self.sep: str = ''
         self.names: list[str] = []
@@ -149,7 +150,6 @@ class Dataset(object):
 
         :key df: The dataset itself, should be a DataFrame
         :key dir_: Projects path directory, should be a str
-        :key folder_name: Dataset's folder name, should be a str
         :key name: Dataset's name, should be a str
         :key sep: Dataset's seperator, should be a str
         :key names: Dataset's feature names, should be a list[str]
@@ -166,8 +166,8 @@ class Dataset(object):
 
         :return: completed - bool
         """
-        name = utils.joinPath(self.name, ext='.csv')
-        df = load(utils.joinPath(self.dir_, self.folder_name), name, target=self.target, sep=self.sep)
+        name = utils.joinPath(self.name, ext=self.EXT)
+        df = load(utils.joinPath(self.dir_, self.FOLDER_NAME), name, target=self.target, sep=self.sep)
         if isinstance(df, DataFrame):
             self.df = df
             return True
@@ -180,8 +180,8 @@ class Dataset(object):
 
         :return: completed - bool
         """
-        path_ = utils.makePath(self.dir_, self.folder_name)
-        name = utils.joinPath(self.name, ext='.csv')
+        path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
+        name = utils.joinPath(self.name, ext=self.EXT)
 
         completed = save(path_, name, self.df, sep=self.sep)
         if not completed:
@@ -220,11 +220,11 @@ class Dataset(object):
         :param kwargs: Additional keywords to pass to train_test_split
         :return: X_train, X_test, y_train, y_test - tuple[DataFrame, DataFrame, Series, Series]
         """
-        X, y = self.getIndependent(), self.getDependent()
         defaults = {'train_size': self.train_size}
-        return split(X, y, **dict(defaults, **kwargs))
+        return split(self.X, self.y, **dict(defaults, **kwargs))
 
-    def getIndependent(self) -> DataFrame:
+    @property
+    def X(self) -> DataFrame:
         """
         Get the independent features.
 
@@ -232,7 +232,8 @@ class Dataset(object):
         """
         return self.df.drop(self.target, axis=1)
 
-    def getDependent(self) -> Series:
+    @property
+    def y(self) -> Series:
         """
         Get the dependent variables.
 
