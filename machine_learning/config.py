@@ -11,35 +11,33 @@ class Config(object):
     Config stores default and important values that the Dataset and Model
     class can use. The end-user can save, load and update the attributes.
     """
+    EXT = '.json'
+    FOLDER_NAME = 'configs'
 
     def __init__(self, dir_: str, name: str, **kwargs) -> None:
         """
         Create an instance of Config.
 
-        :param dir_: Project's path directory, should be a str
-        :param name: Dataset's name, should be a str
+        :param dir_: Project directory, should be a str
+        :param name: Project name, should be a str
         :param kwargs: Additional keywords to pass to update
         :return: None
         """
         # Default configuration for Config
         self.dir_: str = dir_
-        self.folder_name: str = 'configs'
         self.name: str = name
         self.random_state: int = 0
+        self.results_folder: str = 'results'
 
         # Default configuration for Dataset
-        self.dataset: dict[str: Any] = {'dir_': dir_,
-                                        'folder_name': 'datasets',
-                                        'name': name,
-                                        'sep': ',',
-                                        'names': [],
-                                        'target': 'target',
-                                        'train_size': 0.8}
+        self._dataset: dict[str: Any] = {'name': name,
+                                         'sep': ',',
+                                         'names': [],
+                                         'target': 'cnt',
+                                         'train_size': 0.75}
 
         # Default configuration for Model
-        self.model: dict[str: Any] = {'dir_': dir_,
-                                      'folder_name': 'models',
-                                      'name': name}
+        self._model: dict[str: Any] = {'name': name}
 
         self.update(**kwargs)
 
@@ -50,9 +48,10 @@ class Config(object):
         """
         Update the instance attributes.
 
-        :key dir_: Project's path directory, should be a str
-        :key folder name: Config's folder name, should be a str
-        :key name: Dataset's name, should be a str
+        :key dir_: Project directory, should be a str
+        :key name: Project name, should be a str
+        :key random_state: Also known as random seed, should be an int
+        :key results_folder: Name of the result folder, should be a str
         :key dataset: Config for dataset, should be a dict
         :key model: Config for model, should be a dict
         :return: None
@@ -66,8 +65,8 @@ class Config(object):
 
         :return: completed - bool
         """
-        name = utils.joinPath(self.name, ext='.json')
-        data = utils.load(utils.joinPath(self.dir_, self.folder_name), name, errors='ignore')
+        name = utils.joinPath(self.name, ext=self.EXT)
+        data = utils.load(utils.joinPath(self.dir_, self.FOLDER_NAME), name, errors='ignore')
         if data is None:
             logging.warning(f"Failed to load config '{self.name}'")
             return False
@@ -81,9 +80,47 @@ class Config(object):
 
         :return: completed - bool
         """
-        path_ = utils.makePath(self.dir_, self.folder_name)
-        name = utils.joinPath(self.name, ext='.json')
+        path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
+        name = utils.joinPath(self.name, ext=self.EXT)
         completed = utils.save(path_, name, self.__dict__)
         if not completed:
             logging.warning(f"Failed to save config '{self.name}'")
         return completed
+
+    @property
+    def dataset(self) -> dict:
+        """
+        Return the dataset configuration.
+
+        :return: dataset_config - dict[str: Any]
+        """
+        return dict(self._dataset, dir_=self.dir_)
+
+    @dataset.setter
+    def dataset(self, dataset_config: dict) -> None:
+        """
+        Updates the dataset attribute.
+
+        :param dataset_config: Config for dataset, should be a dict
+        :return: None
+        """
+        self._dataset = dataset_config
+
+    @property
+    def model(self) -> dict:
+        """
+        Return the model configuration.
+
+        :return: model_config - dict[str: Any]
+        """
+        return dict(self._dataset, dir_=self.dir_)
+
+    @model.setter
+    def model(self, model_config: dict) -> None:
+        """
+        Updates the model attribute.
+
+        :param model_config: Config for model, should be a dict
+        :return: None
+        """
+        self._model = model_config
