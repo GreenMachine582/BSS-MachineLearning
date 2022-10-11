@@ -8,7 +8,7 @@ import seaborn as sns
 from pandas import DataFrame, Series
 
 import machine_learning as ml
-from machine_learning import Dataset
+from machine_learning import Dataset, utils
 
 sns.set(style='darkgrid')
 
@@ -70,74 +70,87 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
     return df
 
 
-def exploratoryDataAnalysis(df: DataFrame) -> None:
+def exploratoryDataAnalysis(df: DataFrame, name: str = '', dir_: str = '') -> None:
     """
     Performs initial investigations on data to discover patterns, to spot
     anomalies, to test hypothesis and to check assumptions with the help
     of summary statistics and graphical representations.
 
     :param df: BSS dataset, should be a DataFrame
+    :param name: Name of dataset, should be a str
+    :param dir_: Save location for figures, should be a str
     :return: None
     """
     logging.info("Exploratory Data Analysis")
 
-    plt.figure()
-    sns.heatmap(df.corr(), annot=True)
-    plt.title('Pre-Processed Corresponding Matrix')
+    fig = plt.figure(figsize=(9.5, 7.5))
+    graph = sns.heatmap(df.corr(), annot=True, square=True, cmap='Greens', fmt='.2f')
+    graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
+    fig.suptitle(f"Pre-Processed Corresponding Matrix - {name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='png'))
 
     # Month/Day Plot
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), gridspec_kw={'width_ratios': [1, 3]})
-    sns.barplot(x='mnth', y='cnt', data=df, ax=ax1)
-    ax1.set_xlabel('Month', fontsize=14)
-    ax1.set_ylabel('Cnt', fontsize=14)
-    sns.lineplot(x=pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
-    ax2.set_xlabel('Day', fontsize=14)
-    ax2.set_ylabel('Cnt', fontsize=14)
-    plt.suptitle("BSS Demand")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 6), gridspec_kw={'width_ratios': [1, 3]})
+    graph = sns.barplot(x='mnth', y='cnt', data=df, ax=ax1)
+    graph.set(xlabel='Month', ylabel='Demand')
+    graph = sns.lineplot(x=pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
+    graph.set(xlabel='Day', ylabel=None)
+    fig.suptitle(f"Demand Vs (Month and Day) - {name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='png'))
 
     # Groups BSS hourly instances into summed days, makes it easier to
     #   plot the line graph.
     temp = Series(df['cnt'], index=df.index).resample('D').sum()
 
     # Plots BSS daily demand
-    plt.figure()
+    fig = plt.figure(figsize=(10, 5))
     plt.plot(temp.index, temp, color='blue')
-    plt.title('BSS Demand Vs Date')
-    plt.xlabel('Datetime')
-    plt.ylabel('Cnt')
-    plt.show()
+    plt.xlabel('Date')
+    plt.ylabel('Demand')
+    fig.suptitle(f"Demand Vs Date - {name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='png'))
 
     # Plots BSS Demand of weather codes
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
-    sns.barplot(x=df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
-    ax1.set_xlabel('Feel Temperature', fontsize=14)
-    ax1.set_ylabel('Cnt', fontsize=14)
-    sns.barplot(x='weather_code', y='cnt', data=df, ax=ax2)
-    ax2.set_xlabel('Weather Codes', fontsize=14)
-    plt.suptitle("BSS Demand")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
+    graph = sns.barplot(x=df['atemp'].apply(lambda x: round(x, 1)), y='cnt', data=df, ax=ax1)
+    graph.set(xlabel='Feel Temperature', ylabel='Demand')
+    graph = sns.barplot(x='weather_code', y='cnt', data=df, ax=ax2)
+    graph.set(xlabel='Weather Codes', ylabel=None)
+    plt.suptitle(f"Demand Vs (Feel Temp and Weather Codes) - {name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='png'))
 
     # Plots BSS Demand of weekday and weekend
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(9, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1, 1]})
-    sns.boxplot(x='season', y='cnt', data=df, ax=ax1)
-    ax1.set_xlabel('Season', fontsize=14)
-    ax1.set_ylabel('Cnt', fontsize=14)
-    sns.boxplot(x='is_holiday', y='cnt', data=df, ax=ax2)
-    ax2.set_xlabel('Workingday Vs Holiday', fontsize=14)
-    sns.boxplot(x='is_weekend', y='cnt', data=df, ax=ax3)
-    ax3.set_xlabel('Weekday Vs Weekend', fontsize=14)
-    plt.suptitle("BSS Demand")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1, 1]})
+    graph = sns.boxplot(x='season', y='cnt', data=df, ax=ax1)
+    graph.set(xlabel=None, ylabel='Demand')
+    graph.set_xticklabels(['Winter', 'Spring', 'Summer', 'Fall'], rotation=30)
+    graph = sns.boxplot(x='is_holiday', y='cnt', data=df, ax=ax2)
+    graph.set(xlabel=None, ylabel=None)
+    graph.set_xticklabels(['Workingday', 'Holiday'], rotation=30)
+    graph = sns.boxplot(x='is_weekend', y='cnt', data=df, ax=ax3)
+    graph.set(xlabel=None, ylabel=None)
+    graph.set_xticklabels(['Weekday', 'Weekend'], rotation=30)
+    plt.suptitle(f"Demand Vs (Season, isHoliday, isWeekend) - {name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='png'))
 
     # Plots Normalised Environmental Values
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(6, 4), sharey='row')
-    sns.boxplot(y=df['temp'], ax=ax1)
-    ax1.set_ylabel('Temp', fontsize=14)
-    sns.boxplot(y=df['atemp'], ax=ax2)
-    ax2.set_ylabel('Feel Temp', fontsize=14)
-    sns.boxplot(y=df['hum'], ax=ax3)
-    ax3.set_ylabel('Humidity', fontsize=14)
-    sns.boxplot(y=df['wind_speed'], ax=ax4)
-    ax4.set_ylabel('Wind Speed', fontsize=14)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(6, 5), sharey='row')
+    graph = sns.boxplot(y=df['temp'], ax=ax1)
+    graph.set(title='Temp', ylabel=None)
+    graph = sns.boxplot(y=df['atemp'], ax=ax2)
+    graph.set(title='Feel Temp', ylabel=None)
+    graph = sns.boxplot(y=df['hum'], ax=ax3)
+    graph.set(title='Humidity', ylabel=None)
+    graph = sns.boxplot(y=df['wind_speed'], ax=ax4)
+    graph.set(title='Wind Speed', ylabel=None)
     plt.suptitle("Normalised Environmental Values")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, f"Normalised Environmental Values - {name}", ext='png'))
 
     plt.show()  # displays all figures
 
@@ -213,6 +226,8 @@ def main(dir_: str) -> None:
     for name in datasets:
         config = ml.Config(dir_, name)
 
+        results_dir = utils.makePath(dir_, config.results_folder, 'process')
+
         # Loads the BSS dataset
         dataset = ml.Dataset(config.dataset)
         if not dataset.load():
@@ -226,20 +241,24 @@ def main(dir_: str) -> None:
 
         dataset.df.drop('datetime', axis=1, inplace=True)
 
-        exploratoryDataAnalysis(dataset.df)
+        exploratoryDataAnalysis(dataset.df, name=name, dir_=results_dir)
 
         dataset.apply(processData)
         dataset.update(name=(name + '-processed'))
         print(dataset.df.axes)
         print(dataset.df.head())
-        plt.figure()
-        sns.heatmap(dataset.df.corr(), annot=True)
-        plt.title('Processed Corresponding Matrix')
+        fig = plt.figure(figsize=(9.5, 7.5))
+        graph = sns.heatmap(dataset.df.corr(), annot=True, square=True, cmap='Greens', fmt='.2f')
+        graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
+        fig.suptitle(f"Processed Corresponding Matrix - {name}")
+        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='png'))
         plt.show()
 
         dataset.apply(pd.get_dummies)  # apply one hot encoding to categorical features
         print(dataset.df.dtypes)
-        plt.figure(figsize=(14, 10))
-        sns.heatmap(dataset.df.corr(), annot=True)
-        plt.title('Processed and Encoded Corresponding Matrix')
+        fig = plt.figure(figsize=(14, 10))
+        graph = sns.heatmap(dataset.df.corr(), annot=True, cmap='Greens', fmt='.2f', cbar=False)
+        graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
+        fig.suptitle(f"Processed and Encoded Corresponding Matrix - {name}")
+        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='png'))
         plt.show()
