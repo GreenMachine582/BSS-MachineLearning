@@ -47,6 +47,7 @@ def save(dir_: str, name: str, model: object) -> bool:
 
 
 class Model(object):
+    FOLDER_NAME = 'models'
 
     def __init__(self, config: dict, **kwargs) -> None:
         """
@@ -58,7 +59,7 @@ class Model(object):
         """
         self.model: Any = None
         self.dir_: str = ''
-        self.folder_name: str = ''
+
         self.name: str = ''
 
         self.update(**dict(config, **kwargs))
@@ -69,7 +70,6 @@ class Model(object):
 
         :key model: Model's classifier or estimator, should be an object
         :key dir_: Project's path directory, should be a str
-        :key folder_name: Model's folder name, should be a str
         :key name: Model's name, should be a str
         :return: None
         """
@@ -82,7 +82,7 @@ class Model(object):
 
         :return: completed - bool
         """
-        model = load(utils.joinPath(self.dir_, self.folder_name), self.name)
+        model = load(utils.joinPath(self.dir_, self.FOLDER_NAME), self.name)
         if model is None:
             return False
         self.model = model
@@ -94,5 +94,5 @@ class Model(object):
 
         :return: completed - bool
         """
-        path_ = utils.makePath(self.dir_, self.folder_name)
+        path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         return save(path_, self.name, self.model)
