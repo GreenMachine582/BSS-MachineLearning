@@ -70,8 +70,7 @@ def update(obj: object, kwargs: dict) -> object:
             if isinstance(attr_, (type(value), type(None))):
                 setattr(obj, key, value)
             else:
-                raise AttributeError(f"'{key}': got '{type(value).__name__}' but expected type is "
-                                     f"'{type(attr_).__name__}'")
+                raise TypeError(f"'{key}': Expected type '{type(attr_).__name__}', got '{type(value).__name__}'")
     return obj
 
 
@@ -155,3 +154,37 @@ def save(dir_: str, name: str, data: Any, indent: int = 4, errors: str = 'raise'
         return False
     logging.info(f"File '{name}' was saved")
     return True
+
+
+def _plotBox(ax, results: dict, target: str, title: str = ''):
+    """
+    Plots a boxplot and title to the given figure or axes.
+
+    :param ax: Can be the figure or and axes
+    :param results: Results from compareModels, should be a dict[str: dict[str: ndarray]]
+    :param target: The target feature, should be a str
+    :param title: The title of the plot, should be a str
+    :return: ax
+    """
+    scores = [results[name][target] for name in results]
+    ax.boxplot(scores, labels=[name for name in results])
+    ax.suptitle(title)
+    return ax
+
+
+def _plotBar(ax, x: list, y: list, title: str = ''):
+    """
+    Plots a bar graph and title to the given figure or axes.
+
+    :param ax: Can be the figure or and axes
+    :param x: X-axis labels, should be a list[str]
+    :param y: Y-axis values, should be a list[int | float]
+    :param title: The title of the plot, should be a str
+    :return: ax
+    """
+    ax.bar(x, y)
+    diff = (max(y) - min(y))
+    if diff != 0:
+        ax.set_ylim(min(y) - (diff * 0.1), max(y) + (diff * 0.1))
+    ax.set(title=title)
+    return ax
