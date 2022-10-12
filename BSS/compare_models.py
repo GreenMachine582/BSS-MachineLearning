@@ -4,11 +4,8 @@ import logging
 
 import numpy as np
 from matplotlib import pyplot as plt
-from numpy import linspace
 from pandas import DataFrame, Series
-from seaborn import heatmap
 from sklearn import ensemble, neighbors, neural_network, svm, tree, linear_model
-from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import TimeSeriesSplit, cross_validate
 
 import BSS
@@ -87,68 +84,16 @@ def compareEstimators(dataset: Dataset, config: Config) -> None:
     plt.show()
 
     logging.info("Fitting and predicting")
-    predictions = []
+    y_preds = []
     for name in results:
         results[name]['model'].fit(X_train, y_train)
         y_pred = results[name]['model'].predict(X_test)
-        predictions.append((name, np.clip(y_pred, 0, None)))
+        y_preds.append((name, np.clip(y_pred, 0, None)))
 
-    plotEstimatorResultAnalysis(y_test, predictions)
+    BSS.estimator.plotResultAnalysis(y_test, y_preds, show=True, dataset_name=dataset.name, dir_=results_dir)
 
-    plotPredictions(y_train, y_test, predictions)
+    BSS.estimator.plotPredictions(y_train, y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
 
-
-def plotClassifierResultAnalysis(y_test: Series, predictions: list) -> None:
-    """
-    Plots the results analysis bar graph for each classifier.
-
-    :param y_test: Testing dependent variables, should be a Series
-    :param predictions: Classifiers predictions, should be a list[tuple[str, ndarray]]
-    :return: None
-    """
-    results, labels = {}, []
-    for name, y_pred in predictions:
-        results[name] = BSS.classifier.resultAnalysis(y_test, y_pred, show=False)
-        labels.append(name)
-
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(8, 4), sharex='row')
-    fig.suptitle('Result Analysis')
-    _plotBar(ax1, labels, [results[name]['accuracy'] for name in results], 'Accuracy')
-    _plotBar(ax2, labels, [results[name]['precision'] for name in results], 'Precision')
-    _plotBar(ax3, labels, [results[name]['recall'] for name in results], 'Recall')
-    _plotBar(ax4, labels, [results[name]['f1'] for name in results], 'F1')
-    plt.show()
-
-
-def plotClassifications(y_test: Series, names: list, predictions: list) -> None:
-    """
-    Plots confusion matrices to compare the classifiers predictions.
-
-    :param y_test: Testing dependent variables, should be a Series
-    :param names: The classifiers names, should be a list[str]
-    :param predictions: The classifiers predictions, should be a list[ndarray]
-    :return: None
-    """
-    if len(predictions) != 4:
-        logging.warning(f"Incorrect number of names and predictions")
-        return
-
-    # Heatmaps of confusion matrices
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    cm = confusion_matrix(y_test, predictions[0])
-    heatmap(cm / np.sum(cm), square=True, annot=True, fmt='.2%', cbar=False, ax=ax1)
-    ax1.set_ylabel(f"{names[0]}", fontsize=14)
-    cm = confusion_matrix(y_test, predictions[1])
-    heatmap(cm / np.sum(cm), square=True, annot=True, fmt='.2%', cbar=False, ax=ax2)
-    ax2.set_ylabel(f"{names[1]}", fontsize=14)
-    cm = confusion_matrix(y_test, predictions[2])
-    heatmap(cm / np.sum(cm), square=True, annot=True, fmt='.2%', cbar=False, ax=ax3)
-    ax3.set_ylabel(f"{names[2]}", fontsize=14)
-    cm = confusion_matrix(y_test, predictions[3])
-    heatmap(cm / np.sum(cm), square=True, annot=True, fmt='.2%', cbar=False, ax=ax4)
-    ax4.set_ylabel(f"{names[3]}", fontsize=14)
-    plt.suptitle("BSS Demand Classification Predictions (Up or Down) - Confusion Matrices")
-    plt.show()
 
 
 def compareClassifiers(dataset: Dataset, random_state: int = None) -> None:
@@ -192,11 +137,11 @@ def compareClassifiers(dataset: Dataset, random_state: int = None) -> None:
     _plotBox(plt, results, 'fit_time', "Model Fitting Time Comparison")
     plt.show()
 
-    predictions = []
+    y_preds = []
     for name in results:
         results[name]['model'].fit(X_train, y_train)
-        predictions.append((name, results[name]['model'].predict(X_test)))
+        y_preds.append((name, results[name]['model'].predict(X_test)))
 
-    plotClassifierResultAnalysis(y_test, predictions)
+    BSS.classifier.plotResultAnalysis(y_test, y_preds, show=True, dataset_name=dataset.name, dir_=results_dir)
 
-    plotClassifications(y_test, *zip(*predictions))
+    BSS.classifier.plotResultAnalysis(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
