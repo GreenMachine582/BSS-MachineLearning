@@ -4,6 +4,7 @@ log.txt
 venv
 configs/*
 models/*
+results/*
 Jupyter Notebooks/.ipynb_checkpoints
 Jupyter Notebooks/*.ipynb
 Jupyter Notebooks/*.html

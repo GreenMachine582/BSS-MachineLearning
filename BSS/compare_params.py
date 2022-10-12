@@ -9,7 +9,7 @@ from sklearn import ensemble, neural_network, neighbors
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
 
 import machine_learning as ml
-from machine_learning import Config, Dataset, Model, utils
+from machine_learning import Config, Dataset, Model
 
 
 def searchCV(model: Model, X_train: DataFrame, y_train: Series, display: bool = True, search_method: str = 'randomised',
@@ -192,7 +192,7 @@ def findEstimatorParams(dataset: Dataset, config: Config) -> None:
         if estimator is not None:
             estimator = Model(config.model, **estimator)
 
-            results_dir = utils.makePath(config.dir_, config.results_folder, f"{estimator.type_}_{estimator.name}")
+            results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{estimator.type_}_{estimator.name}")
 
             cv_results = searchCV(estimator, X_train, y_train)
 

@@ -4,7 +4,10 @@ import logging
 import os
 from typing import Any
 
-from . import utils
+from numpy import ndarray
+from pandas import Series
+
+from . import classifier, estimator, utils
 
 
 def load(dir_: str, name: str) -> object:
@@ -57,10 +60,16 @@ class Model(object):
         :param kwargs: Additional keywords to pass to update
         :return: None
         """
-        self.model: Any = None
         self.dir_: str = ''
 
         self.name: str = ''
+        self.fullname: str = ''
+        self.type_: str = ''
+        self.base: Any = None
+        self.best_params: dict = {}
+        self.grid_params: dict = {}
+
+        self.model: Any = None
 
         self.update(**dict(config, **kwargs))
 
@@ -68,11 +77,20 @@ class Model(object):
         """
         Update the instance attributes.
 
-        :key model: Model's classifier or estimator, should be an object
         :key dir_: Project's path directory, should be a str
         :key name: Model's name, should be a str
+        :key fullname: Model's fullname, should be a str
+        :key type_: If 'estimator', estimator methods will be used,
+         if 'classifier', classifier methods will be used, should be str
+        :key base: The model's default model, should be an Any
+        :key best_params: The model's best set of params, should be a dict[str: Any]
+        :key grid_params: The model's set of params to be searched, should be a
+         list[dict[str: Any]] | dict[str: Any]
+        :key model: Model's modified base model, can be saved, should be an Any
         :return: None
         """
+        if kwargs.get('type_') not in ["estimator", "classifier"]:
+            raise ValueError("The parameter type_ must be either 'estimator' or 'classifier'")
         utils.update(self, kwargs)
         logging.info(f"Updated model '{self.name}' attributes")
 
@@ -94,6 +112,9 @@ class Model(object):
 
         :return: completed - bool
         """
+        if self.model is None:
+            return False
+
         path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         return save(path_, self.name, self.model)
 

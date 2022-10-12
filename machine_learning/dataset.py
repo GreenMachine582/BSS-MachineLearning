@@ -180,6 +180,9 @@ class Dataset(object):
 
         :return: completed - bool
         """
+        if self.df is None:
+            return False
+
         path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         name = utils.joinPath(self.name, ext=self.EXT)
 

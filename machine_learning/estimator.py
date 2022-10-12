@@ -25,6 +25,7 @@ def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list,
     :return: None
     """
     logging.info("Plotting predictions")
+
     if isinstance(y_pred, tuple):
         y_preds = [y_pred]
     elif isinstance(y_pred, dict):
@@ -64,7 +65,7 @@ def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list,
 def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = True, display: bool = True,
                    dataset_name: str = '', dir_: str = '') -> dict:
     """
-    Calculate and display the result analysis for estimators.
+    Calculate the result analysis with options to display and plot.
 
     :param y_test: Testing dependent variables, should be a Series
     :param y_pred: Predicted dependent variables, should be a tuple[str, ndarray] | dict[str: ndarray

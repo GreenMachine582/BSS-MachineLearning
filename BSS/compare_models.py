@@ -8,8 +8,8 @@ from pandas import DataFrame, Series
 from sklearn import ensemble, neighbors, neural_network, svm, tree, linear_model
 from sklearn.model_selection import TimeSeriesSplit, cross_validate
 
-import BSS
-from machine_learning import Dataset, utils, Config
+import machine_learning as ml
+from machine_learning import Dataset, Config
 
 
 def compareModels(models: dict, X_train: DataFrame, y_train: Series, dataset_name: str = '', dir_: str = '') -> dict:
@@ -39,7 +39,7 @@ def compareModels(models: dict, X_train: DataFrame, y_train: Series, dataset_nam
     ax2.set(ylabel="Fitting Time")
     fig.suptitle(f"Model Comparison - {dataset_name}")
     if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        plt.savefig(ml.utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     plt.show()
     return results
 
@@ -64,7 +64,7 @@ def compareEstimators(dataset: Dataset, config: Config) -> None:
 
     X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
 
-    results_dir = utils.makePath(config.dir_, config.results_folder, 'compare_estimators')
+    results_dir = ml.utils.makePath(config.dir_, config.results_folder, 'compare_estimators')
 
     results = compareModels(estimators, X_train, y_train, dataset_name=dataset.name, dir_=results_dir)
 
@@ -80,9 +80,8 @@ def compareEstimators(dataset: Dataset, config: Config) -> None:
     ax2.set(ylabel="Fitting Time")
     fig.suptitle(f"Model Comparison (Closeup) - {dataset.name}")
     if results_dir:
-        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
-
     logging.info("Fitting and predicting")
     y_preds = []
     for name in results:
@@ -90,9 +89,11 @@ def compareEstimators(dataset: Dataset, config: Config) -> None:
         y_pred = results[name]['model'].predict(X_test)
         y_preds.append((name, np.clip(y_pred, 0, None)))
 
-    BSS.estimator.plotResultAnalysis(y_test, y_preds, show=True, dataset_name=dataset.name, dir_=results_dir)
+    ml.estimator.resultAnalysis(y_test, y_preds, display=False, dataset_name=dataset.name, dir_=results_dir)
 
-    BSS.estimator.plotPredictions(y_train, y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+    y_preds = [(name, Series(y_pred, index=y_test.index).resample('D').sum()) for name, y_pred in y_preds]
+    ml.estimator.plotPrediction(y_train.resample('D').sum(), y_test.resample('D').sum(), y_preds, target=dataset.target,
+                                dataset_name=dataset.name, dir_=results_dir)
 
 
 def compareClassifiers(dataset: Dataset, config: Config) -> None:
@@ -105,7 +106,7 @@ def compareClassifiers(dataset: Dataset, config: Config) -> None:
     :param config: BSS configuration, should be a Config
     :return: None
     """
-    dataset.apply(BSS.binaryEncode, dataset.target)
+    dataset.apply(ml.binaryEncode, dataset.target)
 
     models = {'GBC': ensemble.GradientBoostingClassifier(random_state=config.random_state),
               'RFC': ensemble.RandomForestClassifier(random_state=config.random_state),
@@ -120,7 +121,7 @@ def compareClassifiers(dataset: Dataset, config: Config) -> None:
 
     X_train, X_test, y_train, y_test = dataset.split(train_size=0.1, random_state=config.random_state, shuffle=False)
 
-    results_dir = utils.makePath(config.dir_, config.results_folder, 'compare_classifiers')
+    results_dir = ml.utils.makePath(config.dir_, config.results_folder, 'compare_classifiers')
 
     results = compareModels(models, X_train, y_train, dataset_name=dataset.name, dir_=results_dir)
 
@@ -139,7 +140,7 @@ def compareClassifiers(dataset: Dataset, config: Config) -> None:
     ax2.set(ylabel="Fitting Time")
     fig.suptitle(f"Model Comparison (Closeup) - {dataset.name}")
     if results_dir:
-        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
 
     y_preds = []
@@ -147,6 +148,6 @@ def compareClassifiers(dataset: Dataset, config: Config) -> None:
         results[name]['model'].fit(X_train, y_train)
         y_preds.append((name, results[name]['model'].predict(X_test)))
 
-    BSS.classifier.plotResultAnalysis(y_test, y_preds, show=True, dataset_name=dataset.name, dir_=results_dir)
+    ml.classifier.resultAnalysis(y_test, y_preds, display=False, dataset_name=dataset.name, dir_=results_dir)
 
-    BSS.classifier.plotPredictions(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+    ml.classifier.plotPrediction(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
