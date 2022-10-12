@@ -89,7 +89,7 @@ class Model(object):
         :key model: Model's modified base model, can be saved, should be an Any
         :return: None
         """
-        if kwargs.get('type_') not in ["estimator", "classifier"]:
+        if 'type_' in kwargs and kwargs['type_'] not in ["estimator", "classifier"]:
             raise ValueError("The parameter type_ must be either 'estimator' or 'classifier'")
         utils.update(self, kwargs)
         logging.info(f"Updated model '{self.name}' attributes")

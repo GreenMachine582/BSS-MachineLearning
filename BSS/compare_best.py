@@ -100,7 +100,8 @@ def compareBestEstimators(dataset: Dataset, config: Config) -> None:
         if estimator is not None:
             estimator = Model(config.model, **estimator)
 
-            estimator.update(model=deepcopy(estimator.base).set_params(**estimator.best_params))
+            estimator.update(model=deepcopy(estimator.base))
+            estimator.model.set_params(**estimator.best_params)
 
             logging.info("Fitting and predicting")
             estimator.model.fit(X_train, y_train)

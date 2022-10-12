@@ -45,13 +45,11 @@ def _plotBullseye(ax, x, y, title=''):
 
 
 def main(dir_=local_dir):
-    config = ml.Config(dir_, 'Bike-Sharing-Dataset-hour')
-    # config = ml.Config(dir_, 'london_merged-hour')
+    config = ml.Config(dir_, 'DC_day')
 
     dataset = ml.Dataset(config.dataset)
     if not dataset.load():
-        return
-
+        raise Exception("Failed to load dataset")
     dataset = BSS.processDataset(dataset)
 
     X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
@@ -76,7 +74,7 @@ def main(dir_=local_dir):
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 
-    _plotBullseye(ax1, bias[0], var[0], names[0])
+    _plotBullseye(ax1, bias[0], var[0])
     # _plotBullseye(ax2, bias[1], var[1], names[1])
     # _plotBullseye(ax3, bias[2], var[2], names[2])
     # _plotBullseye(ax4, bias[3], var[3], names[3])
