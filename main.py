@@ -75,6 +75,9 @@ def main() -> None:
                 BSS.compare_models.compareClassifiers(deepcopy(dataset), config.random_state)
             elif choice == 5:
                 BSS.compare_params.findEstimatorParams(deepcopy(dataset), config)
+            elif choice == 5:
+                warnings.warn("This option is in Alpha stage, expect errors")
+                BSS.compare_best.compareBestEstimators(deepcopy(dataset), config)
             elif choice == 6:
                 BSS.compare_params.findEstimatorParams(deepcopy(dataset), config)
             elif choice == 7:
