@@ -113,7 +113,7 @@ class Config(object):
 
         :return: model_config - dict[str: Any]
         """
-        return dict(self._dataset, dir_=self.dir_)
+        return dict(self._model, dir_=self.dir_)
 
     @model.setter
     def model(self, model_config: dict) -> None:
