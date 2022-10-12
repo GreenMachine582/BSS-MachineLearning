@@ -21,9 +21,9 @@ def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     :param target: The dataset's target value, should be a str
     :return: df - DataFrame
     """
+    logging.info("Encoding target variables")
     if df[target].dtype not in ['float64', 'int64']:
-        logging.warning("The target values are not compatible")
-        return df
+        raise NotImplementedError("The target variables are not supported")
 
     df[target] = [int(df[target][max(0, i - 1)] < df[target][min(len(df[target]) - 1, i)])
                   for i in range(len(df[target]))]
@@ -36,8 +36,7 @@ def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     return df
 
 
-def plotPredictions(y_test: Series, y_pred: tuple | dict | list, dataset_name: str = '',
-                    dir_: str = '') -> None:
+def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: str = '', dir_: str = '') -> None:
     """
     Plot the predictions in a confusion matrix format.
 
@@ -74,7 +73,7 @@ def plotPredictions(y_test: Series, y_pred: tuple | dict | list, dataset_name: s
         cm = confusion_matrix(y_test, y_preds[3])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax4)
         graph.set(xlabel=names[3])
-        fig.suptitle(f"BSS Predicted Demand (Up or Down) - {dataset_name}")
+        fig.suptitle(f"Classifier Prediction (Up or Down) - {dataset_name}")
         if dir_:
             plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     else:
@@ -83,24 +82,25 @@ def plotPredictions(y_test: Series, y_pred: tuple | dict | list, dataset_name: s
             cm = DataFrame(confusion_matrix(y_test, y_pred))
             graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False)
             graph.set(xlabel=name)
-            fig.suptitle(f"BSS {name} Predicted Demand (Up or Down) - {dataset_name} - Confusion Matrix")
+            fig.suptitle(f"{name} Classifier Prediction (Up or Down) - {dataset_name} - Confusion Matrix")
             if dir_:
                 plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     plt.show()
 
 
-def plotResultAnalysis(y_test: Series, y_pred: tuple | dict | list, show: bool = True, dataset_name: str = '',
-                       dir_: str = '') -> None:
+def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = True, display: bool = True,
+                   dataset_name: str = '', dir_: str = '') -> dict:
     """
     Calculate and display the result analysis for classifiers.
 
     :param y_test: Testing dependent variables, should be a Series
     :param y_pred: Model predictions, should be a tuple[str, ndarray] | dict[str: ndarray
      | list[tuple[str, ndarray]
-    :param show: Whether to show the results, should be a bool
+    :param plot: Whether to plot the results, should be a bool
+    :param display: Whether to show the results, should be a bool
     :param dataset_name: Name of dataset, should be a str
     :param dir_: Save location for figures, should be a str
-    :return: None
+    :return: results - dict[str: list[str | float]]
     """
     logging.info("Analysing results")
 
@@ -122,12 +122,15 @@ def plotResultAnalysis(y_test: Series, y_pred: tuple | dict | list, show: bool =
         results['recall'].append(recall_score(y_test, y_pred))
         results['f1'].append(f1_score(y_test, y_pred))
 
-        if show:
+        if display:
             print("\nModel:", name)
             print("Accuracy: %.4f" % results['accuracy'][-1])
             print("Precision: %.4f" % results['precision'][-1])
             print("Recall: %.4f" % results['recall'][-1])
             print("F1: %.4f" % results['f1'][-1])
+
+    if not plot:
+        return results
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 8), sharex='col')
     utils._plotBar(ax1, results['names'], results['accuracy'], 'Accuracy')
@@ -138,3 +141,4 @@ def plotResultAnalysis(y_test: Series, y_pred: tuple | dict | list, show: bool =
     if dir_:
         plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     plt.show()
+    return results
