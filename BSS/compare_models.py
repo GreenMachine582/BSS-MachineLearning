@@ -15,7 +15,7 @@ import BSS
 from machine_learning import Dataset
 
 
-def compareModels(models: dict, X_train: DataFrame, y_train: Series) -> dict:
+def compareModels(models: dict, X_train: DataFrame, y_train: Series, dataset_name: str = '', dir_: str = '') -> dict:
     """
     Cross validates each model with a time series split and plots comparison
     graphs of test scores and fitting times.
@@ -23,6 +23,8 @@ def compareModels(models: dict, X_train: DataFrame, y_train: Series) -> dict:
     :param models: The models to be compared, should be a dict[str: Any]
     :param X_train: Training independent features, should be a DataFrame
     :param y_train: Training dependent variables, should be a Series
+    :param dataset_name: Name of dataset, should be a str
+    :param dir_: Save location for figures and results, should be a str
     :return: results - dict[str: Any]
     """
     results = {}
@@ -33,10 +35,14 @@ def compareModels(models: dict, X_train: DataFrame, y_train: Series) -> dict:
 
         print('%s: %f (%f)' % (name, cv_results['test_score'].mean(), cv_results['test_score'].std()))
 
-    plt.figure()
-    _plotBox(plt, results, 'test_score', "Model Test Score Comparison")
-    plt.figure()
-    _plotBox(plt, results, 'fit_time', "Model Fitting Time Comparison")
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex='col')
+    ax1.boxplot([results[name]['test_score'] for name in results], labels=[name for name in results])
+    ax1.set(ylabel="Testing Score")
+    ax2.boxplot([results[name]['fit_time'] for name in results], labels=[name for name in results])
+    ax2.set(ylabel="Fitting Time")
+    fig.suptitle(f"Model Comparison - {dataset_name}")
+    if dir_:
+        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     plt.show()
     return results
 
@@ -61,17 +67,23 @@ def compareEstimators(dataset: Dataset, config: Config) -> None:
 
     X_train, X_test, y_train, y_test = dataset.split(random_state=random_state, shuffle=False)
 
-    results = compareModels(estimators, X_train, y_train)
+    results_dir = utils.makePath(config.dir_, config.results_folder, 'compare_estimators')
+
+    results = compareModels(estimators, X_train, y_train, dataset_name=dataset.name, dir_=results_dir)
 
     # removes estimators that performed poorly
     del results['KNR']
     del results['SVR']
     del results['ETR']
 
-    plt.figure()
-    _plotBox(plt, results, 'test_score', "Model Test Score Comparison")
-    plt.figure()
-    _plotBox(plt, results, 'fit_time', "Model Fitting Time Comparison")
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex='col')
+    ax1.boxplot([results[name]['test_score'] for name in results], labels=[name for name in results])
+    ax1.set(ylabel="Testing Score")
+    ax2.boxplot([results[name]['fit_time'] for name in results], labels=[name for name in results])
+    ax2.set(ylabel="Fitting Time")
+    fig.suptitle(f"Model Comparison (Closeup) - {dataset.name}")
+    if results_dir:
+        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
 
     logging.info("Fitting and predicting")
