@@ -96,3 +96,39 @@ class Model(object):
         """
         path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         return save(path_, self.name, self.model)
+
+    def plotPrediction(self, y_train: Series, y_test: Series, y_pred: ndarray, **kwargs) -> None:
+        """
+        Plot the prediction on a line graph.
+
+        :param y_train: Training independent features, should be a Series
+        :param y_test: Testing dependent features, should be a Series
+        :param y_pred: Predicted dependent variables, should be a ndarray
+        :key target: The predicted variables name, should be a str
+        :key dataset_name: Name of dataset, should be a str
+        :key dir_: Save location for figures, should be a str
+        :return: None
+        """
+        if self.type_ == 'estimator':
+            estimator.plotPrediction(y_train, y_test, (self.name, y_pred), **kwargs)
+        elif self.type_ == 'classifier':
+            if 'target' in kwargs:
+                del kwargs['target']
+            classifier.plotPrediction(y_test, (self.name, y_pred), **kwargs)
+
+    def resultAnalysis(self, y_test: Series, y_pred: ndarray, **kwargs) -> None:
+        """
+        Calculate the result analysis.
+
+        :param y_test: Testing dependent variables, should be a Series
+        :param y_pred: Predicted dependent variables, should be a ndarray
+        :key plot: Whether to plot the results, should be a bool
+        :key display: Whether to display the results, should be a bool
+        :key dataset_name: Name of dataset, should be a str
+        :key dir_: Save location for figures, should be a str
+        :return: results - dict[str: list[str | float]]
+        """
+        if self.type_ == 'estimator':
+            estimator.resultAnalysis(y_test, (self.name, y_pred), **kwargs)
+        elif self.type_ == 'classifier':
+            classifier.resultAnalysis(y_test, (self.name, y_pred), **kwargs)
