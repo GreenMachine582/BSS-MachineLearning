@@ -4,8 +4,12 @@ import logging
 import os
 from typing import Any
 
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import rcParams
 from numpy import ndarray
 from pandas import Series
+from sklearn.inspection import permutation_importance
 
 from . import classifier, estimator, utils
 
@@ -155,3 +159,51 @@ class Model(object):
             estimator.resultAnalysis(y_test, (self.name, y_pred), **kwargs)
         elif self.type_ == 'classifier':
             classifier.resultAnalysis(y_test, (self.name, y_pred), **kwargs)
+
+    def plotImportance(self, feature_names, X_test, y_test, dataset_name: str = '', dir_: str = '') -> None:
+        """
+
+        :param feature_names:
+        :param X_test:
+        :param y_test:
+        :param dataset_name: Name of dataset, should be a str
+        :param dir_: Save location for figures, should be a str
+        :return:
+        """
+        # TODO: Documentation
+        if self.model is None:
+            logging.warning("Model attribute 'model' has not been assigned.")
+            return
+
+        if hasattr(self.model, 'feature_importances_'):
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            feature_importance = self.model.feature_importances_
+            sorted_idx = np.argsort(feature_importance)
+            pos = np.arange(sorted_idx.shape[0]) + 0.5
+            ax1.barh(pos, feature_importance[sorted_idx], align="center")
+            ax1.set_yticks(pos, np.array(feature_names)[sorted_idx])
+
+            result = permutation_importance(self.model, X_test, y_test, n_repeats=10, n_jobs=-1)
+            sorted_idx = result.importances_mean.argsort()
+            ax2.boxplot(result.importances[sorted_idx].T, vert=False, labels=np.array(feature_names)[sorted_idx])
+            fig.suptitle(f"Feature and Permutation Importance - {dataset_name}")
+            if dir_:
+                plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        elif hasattr(self.model, 'coef_'):
+            fig, ax = plt.subplots()
+            coef = Series(self.model.coef_, index=feature_names)
+            imp_coef = coef.sort_values()
+            rcParams['figure.figsize'] = (8.0, 10.0)
+            imp_coef.plot(kind="barh")
+            fig.suptitle(f"Coefficient Importance - {dataset_name}")
+            if dir_:
+                plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        else:
+            fig, ax = plt.subplots()
+            result = permutation_importance(self.model, X_test, y_test, n_repeats=10, n_jobs=-1)
+            sorted_idx = result.importances_mean.argsort()
+            ax.boxplot(result.importances[sorted_idx].T, vert=False, labels=np.array(feature_names)[sorted_idx])
+            fig.suptitle(f"Permutation Importance - {dataset_name}")
+            if dir_:
+                plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        plt.show()
