@@ -129,8 +129,8 @@ def compareClassifiers(dataset: Dataset, config: Config) -> None:
 
     # removes classifiers that performed poorly
     del results['LR']
-    del results['RC']
     del results['SGDC']
+    del results['KNC']
     del results['NC']
     del results['SVC']
     del results['DTC']

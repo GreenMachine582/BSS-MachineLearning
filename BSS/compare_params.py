@@ -5,8 +5,8 @@ from copy import deepcopy
 
 import numpy as np
 from pandas import DataFrame, Series
-from sklearn import ensemble, linear_model, neural_network, tree
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit, train_test_split
+from sklearn import ensemble, linear_model, neural_network
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
 
 import machine_learning as ml
 from machine_learning import Config, Dataset, Model
@@ -86,7 +86,7 @@ def getRandomForestRegressor() -> dict:
                    'min_samples_split': 3,
                    'n_estimators': 50}
     grid_params = {'criterion': ['squared_error', 'absolute_error', 'poisson'],
-                   'max_depth': [2 * (i + 1) for i in range(40)] + [None],
+                   'max_depth': [2 * (i + 1) for i in range(40)],
                    'max_features': ['sqrt', 'log2', 2, 1, 0.5],
                    'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4],
                    'n_estimators': [50 * (i + 1) for i in range(20)]}
@@ -101,45 +101,20 @@ def getRandomForestRegressor() -> dict:
     return estimator
 
 
-def getKNeighborsRegressor() -> dict:
-    """
-    Get the Random Forest Regressor and appropriate attributes.
-
-    :return: estimator - dict[str: Any]
-    """
-    best_params = {'algorithm': 'ball_tree',
-                   'n_neighbors': 2,
-                   'p': 2,
-                   'weights': 'distance'}
-    grid_params = {'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
-                   'n_neighbors': range(1, 16, 1),
-                   'p': [1, 2, 5],
-                   'weights': ['uniform', 'distance']}
-
-    estimator = {'name': 'KNR',
-                 'fullname': "K-Neighbors Regressor",
-                 'type_': 'estimator',
-                 'base': neighbors.KNeighborsRegressor(),
-                 'best_params': best_params,
-                 'grid_params': grid_params}
-    logging.info(f"Got '{estimator['name']}' attributes")
-    return estimator
-
-
 def getMLPRegressor() -> dict:
     """
     Get the Random Forest Regressor and appropriate attributes.
 
     :return: estimator - dict[str: Any]
     """
-    best_params = {'activation': 'identity',
+    best_params = {'activation': 'relu',
                    'learning_rate': 'adaptive',
-                   'max_iter': 2200,
+                   'max_iter': 2600,
                    'solver': 'adam'}
-    grid_params = {'activation': ['identity', 'logical', 'tanh', 'relu'],
+    grid_params = {'activation': ['identity', 'logistic', 'tanh', 'relu'],
                    'learning_rate': ['constant', 'invscaling', 'adaptive'],
-                   'max_iter': range(1000, 4001, 50),
-                   'solver': ['lbfgs', 'sgd', 'adam']}
+                   'max_iter': range(2500, 4001, 50),
+                   'solver': ['sgd', 'adam']}
 
     estimator = {'name': 'MLPR',
                  'fullname': "MLP Regressor",
@@ -157,12 +132,12 @@ def getGradientBoostingClassifier() -> dict:
 
     :return: classifier - dict[str: Any]
     """
-    best_params = {'criterion': 'squared_error',
-                   'learning_rate': 0.06,
+    best_params = {'criterion': 'friedman_mse',
+                   'learning_rate': 0.108,
                    'loss': 'log_loss',
-                   'max_depth': 6,
+                   'max_depth': 48,
                    'max_features': None,
-                   'n_estimators': 50,
+                   'n_estimators': 140,
                    'subsample': 0.4}
     grid_params = {'criterion': ['squared_error', 'friedman_mse'],
                    'learning_rate': [0.002 * (i + 1) for i in range(100)],
@@ -188,13 +163,13 @@ def getRandomForestClassifier() -> dict:
 
     :return: classifier - dict[str: Any]
     """
-    best_params = {'criterion': 'gini',
-                   'max_depth': 12,
+    best_params = {'criterion': 'entropy',
+                   'max_depth': 70,
                    'max_features': 0.5,
                    'min_samples_split': 2,
-                   'n_estimators': 500}
+                   'n_estimators': 450}
     grid_params = {'criterion': ['gini', 'entropy', 'log_loss'],
-                   'max_depth': [2 * (i + 1) for i in range(40)] + [None],
+                   'max_depth': [2 * (i + 1) for i in range(40)],
                    'max_features': ['sqrt', 'log2', 2, 1, 0.5],
                    'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4],
                    'n_estimators': [50 * (i + 1) for i in range(20)]}
@@ -215,12 +190,12 @@ def getRidgeClassifier() -> dict:
 
     :return: classifier - dict[str: Any]
     """
-    best_params = {'alpha': 1.66,
-                   'max_iter': 600,
-                   'solver': 'svd'}
+    best_params = {'alpha': 1.54,
+                   'max_iter': 1750,
+                   'solver': 'cholesky'}
     grid_params = {'alpha': [0.02 * (i + 1) for i in range(100)],
                    'max_iter': range(600, 2001, 50),
-                   'solver': ['svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', 'lbfgs']}
+                   'solver': ['svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']}
 
     classifier = {'name': 'RC',
                   'fullname': "Ridge Classifier",
@@ -232,23 +207,25 @@ def getRidgeClassifier() -> dict:
     return classifier
 
 
-def getDecisionTreeClassifier() -> dict:
+def getMLPClassifier() -> dict:
     """
-    Get the Decision Tree Classifier and appropriate attributes.
+    Get the MLP Classifier and appropriate attributes.
 
     :return: classifier - dict[str: Any]
     """
-    best_params = {'criterion': 'log_loss',
-                   'max_features': 0.6,
-                   'min_samples_split': 0.1}
-    grid_params = {'criterion': ['gini', 'entropy', 'log_loss'],
-                   'max_features': ['sqrt', 'log2', 2, 1, 0.8, 0.6, 0.5, 0.2],
-                   'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4]}
+    best_params = {'activation': 'logistic',
+                   'learning_rate': 'constant',
+                   'max_iter': 1300,
+                   'solver': 'adam'}
+    grid_params = {'activation': ['identity', 'logistic', 'tanh', 'relu'],
+                   'learning_rate': ['constant', 'invscaling', 'adaptive'],
+                   'max_iter': range(1000, 4001, 50),
+                   'solver': ['sgd', 'adam']}
 
-    classifier = {'name': 'DTC',
-                  'fullname': "Decision Tree Classifier",
+    classifier = {'name': 'MLPC',
+                  'fullname': "MLP Classifier",
                   'type_': 'classifier',
-                  'base': tree.DecisionTreeClassifier(),
+                  'base': neural_network.MLPClassifier(),
                   'best_params': best_params,
                   'grid_params': grid_params}
     logging.info(f"Got '{classifier['name']}' attributes")
@@ -328,7 +305,7 @@ def compareParams(dataset: Dataset, config: Config) -> None:
             4 - Gradient Boosting Classifier
             5 - Random Forest Classifier
             6 - Ridge Classifier
-            7 - Decision Tree Classifier
+            7 - MLP Classifier
         """)
         choice = input("Which estimator model: ")
         try:
@@ -354,7 +331,7 @@ def compareParams(dataset: Dataset, config: Config) -> None:
             elif choice == 6:
                 model_config = getRidgeClassifier()
             elif choice == 7:
-                model_config = getDecisionTreeClassifier()
+                model_config = getMLPClassifier()
             else:
                 print("\nPlease enter a valid choice!")
 
