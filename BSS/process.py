@@ -171,8 +171,10 @@ def processData(df: DataFrame) -> DataFrame:
     # Adds historical data
     df['prev'] = df['cnt'].shift()
     df['diff'] = df['cnt'].diff()
-    df['prev-2'] = df['prev'].shift()
-    df['diff-2'] = df['prev'].diff()
+    df['diff'] = df['diff'].apply(lambda x: int(bool(x > 0)))
+    df['prev_2'] = df['prev'].shift()
+    df['diff_2'] = df['prev'].diff()
+    df['diff_2'] = df['diff_2'].apply(lambda x: int(bool(x > 0)))
 
     df = ml.handleMissingData(df)
 
@@ -180,7 +182,7 @@ def processData(df: DataFrame) -> DataFrame:
     df.drop(['temp', 'casual', 'registered'], axis=1, errors='ignore', inplace=True)
 
     # Changes datatypes
-    for col in ['prev', 'diff', 'prev-2', 'diff-2']:
+    for col in ['prev', 'diff', 'prev_2', 'diff_2']:
         df[col] = df[col].astype('int64')
 
     df['season'] = df['season'].astype("category")
