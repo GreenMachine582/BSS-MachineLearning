@@ -67,7 +67,7 @@ def update(obj: object, kwargs: dict) -> object:
             raise AttributeError(f"'{obj.__class__.__name__}' object has no attribute '{key}'")
         else:
             attr_ = getattr(obj, key)
-            if isinstance(attr_, (type(value), type(None))):
+            if isinstance(attr_, (type(value), type(None))) or value is None:
                 setattr(obj, key, value)
             else:
                 raise TypeError(f"'{key}': Expected type '{type(attr_).__name__}', got '{type(value).__name__}'")

@@ -5,8 +5,8 @@ from copy import deepcopy
 
 import numpy as np
 from pandas import DataFrame, Series
-from sklearn import ensemble, neural_network, neighbors
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit
+from sklearn import ensemble, linear_model, neural_network, tree
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, TimeSeriesSplit, train_test_split
 
 import machine_learning as ml
 from machine_learning import Config, Dataset, Model
@@ -53,15 +53,15 @@ def getGradientBoostingRegressor() -> dict:
 
     :return: estimator - dict[str: Any]
     """
-    best_params = {'criterion': 'squared_error',
-                   'learning_rate': 0.078,
-                   'max_depth': 2,
+    best_params = {'criterion': 'friedman_mse',
+                   'learning_rate': 0.01,
+                   'max_depth': 65,
                    'n_estimators': 600,
-                   'subsample': 0.3}
+                   'subsample': 0.4}
     grid_params = {'criterion': ['friedman_mse', 'squared_error'],
                    'learning_rate': [0.002 * (i + 1) for i in range(100)],
-                   'max_depth': range(2, 51, 2),
-                   'n_estimators': range(50, 401, 50),
+                   'max_depth': range(5, 101, 5),
+                   'n_estimators': range(50, 801, 50),
                    'subsample': [0.1 * (i + 1) for i in range(10)]}
 
     estimator = {'name': 'GBR',
@@ -80,12 +80,16 @@ def getRandomForestRegressor() -> dict:
 
     :return: estimator - dict[str: Any]
     """
-    best_params = {'criterion': 'absolute_error',
-                   'max_depth': 50,
-                   'max_features': 0.5}
+    best_params = {'criterion': 'squared_error',
+                   'max_depth': 66,
+                   'max_features': 0.5,
+                   'min_samples_split': 3,
+                   'n_estimators': 50}
     grid_params = {'criterion': ['squared_error', 'absolute_error', 'poisson'],
-                   'max_depth': range(2, 101, 2),
-                   'max_features': ['sqrt', 'log2', 2, 1, 0.5]}
+                   'max_depth': [2 * (i + 1) for i in range(40)] + [None],
+                   'max_features': ['sqrt', 'log2', 2, 1, 0.5],
+                   'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4],
+                   'n_estimators': [50 * (i + 1) for i in range(20)]}
 
     estimator = {'name': 'RFR',
                  'fullname': "Random Forest Regressor",
@@ -134,7 +138,7 @@ def getMLPRegressor() -> dict:
                    'solver': 'adam'}
     grid_params = {'activation': ['identity', 'logical', 'tanh', 'relu'],
                    'learning_rate': ['constant', 'invscaling', 'adaptive'],
-                   'max_iter': range(2000, 3001, 50),
+                   'max_iter': range(1000, 4001, 50),
                    'solver': ['lbfgs', 'sgd', 'adam']}
 
     estimator = {'name': 'MLPR',
@@ -157,8 +161,7 @@ def findEstimatorParams(dataset: Dataset, config: Config) -> None:
     :param config: BSS configuration, should be a Config
     :return: None
     """
-    X_train, X_test, y_train, y_test = dataset.split(shuffle=False)
-
+    logging.info("Comparing params")
     while True:
         print(f"""
         0 - Back

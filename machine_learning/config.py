@@ -65,6 +65,10 @@ class Config(object):
 
         :return: completed - bool
         """
+        if not utils.checkPath(self.dir_):
+            logging.warning(f"Path '{self.dir_}' does not exist")
+            return False
+
         name = utils.joinPath(self.name, ext=self.EXT)
         data = utils.load(utils.joinPath(self.dir_, self.FOLDER_NAME), name, errors='ignore')
         if data is None:

@@ -10,39 +10,41 @@ from pandas import Series
 from . import classifier, estimator, utils
 
 
-def load(dir_: str, name: str) -> object:
+def load(dir_: str, name: str, ext: str = '.model') -> Any:
     """
     Load the model from a model file.
 
     :param dir_: Directory path of file, should be a str
     :param name: Name of file, should be a str
-    :return: model - object
+    :param ext: File extension, should be a str
+    :return: model - Any
     """
     if not os.path.exists(dir_):
         logging.warning(f"Path '{dir_}' does not exist")
-        return False
+        return None
 
-    name = utils.joinPath(name, ext='.model')
+    name = utils.joinPath(name, ext=ext)
     model = utils.load(dir_, name)
     if model is None:
         logging.warning(f"Failed to load model '{name}'")
     return model
 
 
-def save(dir_: str, name: str, model: object) -> bool:
+def save(dir_: str, name: str, model: object, ext: str = '.model') -> bool:
     """
     Save the model to a model file.
 
     :param dir_: Directory path of file, should be a str
     :param name: Name of file, should be a str
     :param model: The classifier or estimator, should be an object
+    :param ext: File extension, should be a str
     :return: completed - bool
     """
     if not os.path.exists(dir_):
         logging.warning(f"Path '{dir_}' does not exist")
         return False
 
-    name = utils.joinPath(name, ext='.model')
+    name = utils.joinPath(name, ext=ext)
     completed = utils.save(dir_, name, model)
     if not completed:
         logging.warning(f"Failed to save model '{name}'")
@@ -96,7 +98,7 @@ class Model(object):
 
     def load(self) -> bool:
         """
-        Load the model.
+        Load the model attribute.
 
         :return: completed - bool
         """
@@ -108,7 +110,7 @@ class Model(object):
 
     def save(self) -> bool:
         """
-        Save the model.
+        Save the model attribute.
 
         :return: completed - bool
         """
@@ -118,13 +120,13 @@ class Model(object):
         path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         return save(path_, self.name, self.model)
 
-    def plotPrediction(self, y_train: Series, y_test: Series, y_pred: ndarray, **kwargs) -> None:
+    def plotPrediction(self, y_test: Series, y_pred: ndarray, y_train: Series = None, **kwargs) -> None:
         """
         Plot the prediction on a line graph.
 
-        :param y_train: Training independent features, should be a Series
         :param y_test: Testing dependent features, should be a Series
         :param y_pred: Predicted dependent variables, should be a ndarray
+        :param y_train: Training independent features, should be a Series
         :key target: The predicted variables name, should be a str
         :key dataset_name: Name of dataset, should be a str
         :key dir_: Save location for figures, should be a str

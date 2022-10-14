@@ -23,7 +23,7 @@ def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     """
     logging.info("Encoding target variables")
     if df[target].dtype not in ['float64', 'int64']:
-        raise NotImplementedError("The target variables are not supported")
+        raise NotImplementedError(f"The target variables type '{df[target].dtype}' are not supported")
 
     df[target] = [int(df[target][max(0, i - 1)] < df[target][min(len(df[target]) - 1, i)])
                   for i in range(len(df[target]))]
@@ -73,16 +73,16 @@ def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: st
         cm = confusion_matrix(y_test, y_preds[3])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax4)
         graph.set(xlabel=names[3])
-        fig.suptitle(f"Classifier Prediction (Up or Down) - {dataset_name}")
+        fig.suptitle(f"Classifier Prediction - {dataset_name}")
         if dir_:
             plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     else:
         for name, y_pred in y_preds:
             fig, ax = plt.subplots()
-            cm = DataFrame(confusion_matrix(y_test, y_pred))
-            graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False)
+            cm = confusion_matrix(y_test, y_pred)
+            graph = sns.heatmap((cm / np.sum(cm)), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False)
             graph.set(xlabel=name)
-            fig.suptitle(f"{name} Classifier Prediction (Up or Down) - {dataset_name} - Confusion Matrix")
+            fig.suptitle(f"{name} Classifier Prediction - {dataset_name}")
             if dir_:
                 plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
     plt.show()

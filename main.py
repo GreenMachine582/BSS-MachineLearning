@@ -52,7 +52,7 @@ def main() -> None:
 
     :return: None
     """
-    config, dataset = getProject('London_hour')
+    config, dataset = getProject('DC_day')
 
     run = True
     while run:
@@ -61,7 +61,7 @@ def main() -> None:
         1 - Process Datasets (Includes EDA)
         2 - Compare Default Estimators
         3 - Compare Default Classifiers
-        4 - Compare Estimator Params
+        4 - Compare Params
         5 - Compare Best Estimators (Alpha)
         6 - Staged Predict (Alpha)
         7 - Testing (Alpha)
@@ -83,7 +83,7 @@ def main() -> None:
             elif choice == 3:
                 BSS.compare_models.compareClassifiers(deepcopy(dataset), config)
             elif choice == 4:
-                BSS.compare_params.findEstimatorParams(deepcopy(dataset), config)
+                BSS.compare_params.compareParams(deepcopy(dataset), config)
             elif choice == 5:
                 warnings.warn("This option is in Alpha stage, expect errors")
                 BSS.compare_best.compareBestEstimators(deepcopy(dataset), config)
