@@ -151,7 +151,162 @@ def getMLPRegressor() -> dict:
     return estimator
 
 
-def findEstimatorParams(dataset: Dataset, config: Config) -> None:
+def getGradientBoostingClassifier() -> dict:
+    """
+    Get the Gradient Boosting Classifier and appropriate attributes.
+
+    :return: classifier - dict[str: Any]
+    """
+    best_params = {'criterion': 'squared_error',
+                   'learning_rate': 0.06,
+                   'loss': 'log_loss',
+                   'max_depth': 6,
+                   'max_features': None,
+                   'n_estimators': 50,
+                   'subsample': 0.4}
+    grid_params = {'criterion': ['squared_error', 'friedman_mse'],
+                   'learning_rate': [0.002 * (i + 1) for i in range(100)],
+                   'loss': ['log_loss', 'exponential'],
+                   'max_depth': range(2, 51, 2),
+                   'max_features': ['sqrt', 'log2', None],
+                   'n_estimators': range(10, 201, 10),
+                   'subsample': [0.1 * (i + 1) for i in range(10)]}
+
+    classifier = {'name': 'GBC',
+                  'fullname': "Gradient Boosting Classifier",
+                  'type_': 'classifier',
+                  'base': ensemble.GradientBoostingClassifier(),
+                  'best_params': best_params,
+                  'grid_params': grid_params}
+    logging.info(f"Got '{classifier['name']}' attributes")
+    return classifier
+
+
+def getRandomForestClassifier() -> dict:
+    """
+    Get the Random Forest Classifier and appropriate attributes.
+
+    :return: classifier - dict[str: Any]
+    """
+    best_params = {'criterion': 'gini',
+                   'max_depth': 12,
+                   'max_features': 0.5,
+                   'min_samples_split': 2,
+                   'n_estimators': 500}
+    grid_params = {'criterion': ['gini', 'entropy', 'log_loss'],
+                   'max_depth': [2 * (i + 1) for i in range(40)] + [None],
+                   'max_features': ['sqrt', 'log2', 2, 1, 0.5],
+                   'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4],
+                   'n_estimators': [50 * (i + 1) for i in range(20)]}
+
+    classifier = {'name': 'RFC',
+                  'fullname': "Random Forest Classifier",
+                  'type_': 'classifier',
+                  'base': ensemble.RandomForestClassifier(),
+                  'best_params': best_params,
+                  'grid_params': grid_params}
+    logging.info(f"Got '{classifier['name']}' attributes")
+    return classifier
+
+
+def getRidgeClassifier() -> dict:
+    """
+    Get the Ridge Classifier and appropriate attributes.
+
+    :return: classifier - dict[str: Any]
+    """
+    best_params = {'alpha': 1.66,
+                   'max_iter': 600,
+                   'solver': 'svd'}
+    grid_params = {'alpha': [0.02 * (i + 1) for i in range(100)],
+                   'max_iter': range(600, 2001, 50),
+                   'solver': ['svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga', 'lbfgs']}
+
+    classifier = {'name': 'RC',
+                  'fullname': "Ridge Classifier",
+                  'type_': 'classifier',
+                  'base': linear_model.RidgeClassifier(),
+                  'best_params': best_params,
+                  'grid_params': grid_params}
+    logging.info(f"Got '{classifier['name']}' attributes")
+    return classifier
+
+
+def getDecisionTreeClassifier() -> dict:
+    """
+    Get the Decision Tree Classifier and appropriate attributes.
+
+    :return: classifier - dict[str: Any]
+    """
+    best_params = {'criterion': 'log_loss',
+                   'max_features': 0.6,
+                   'min_samples_split': 0.1}
+    grid_params = {'criterion': ['gini', 'entropy', 'log_loss'],
+                   'max_features': ['sqrt', 'log2', 2, 1, 0.8, 0.6, 0.5, 0.2],
+                   'min_samples_split': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1., 2, 3, 4]}
+
+    classifier = {'name': 'DTC',
+                  'fullname': "Decision Tree Classifier",
+                  'type_': 'classifier',
+                  'base': tree.DecisionTreeClassifier(),
+                  'best_params': best_params,
+                  'grid_params': grid_params}
+    logging.info(f"Got '{classifier['name']}' attributes")
+    return classifier
+
+
+def compareEstimator(estimator, dataset, config):
+    results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{estimator.type_}_{estimator.name}")
+
+    X_train, X_test, y_train, y_test = dataset.split(shuffle=False)
+
+    cv_results = searchCV(estimator, X_train, y_train)
+
+    models = [('Default', deepcopy(estimator.base)),
+              ('Grid Searched', cv_results.best_estimator_),
+              ('Recorded Best', deepcopy(estimator.base).set_params(**estimator.best_params))]
+
+    logging.info("Fitting and predicting")
+    y_preds = []
+    for name, model in models:
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_preds.append((name, np.clip(y_pred, 0, None)))
+
+    ml.estimator.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+
+    y_preds = [(name, Series(y_pred, index=y_test.index).resample('D').sum()) for name, y_pred in y_preds]
+    ml.estimator.plotPrediction(y_train.resample('D').sum(), y_test.resample('D').sum(), y_preds,
+                                target=dataset.target,
+                                dataset_name=dataset.name, dir_=results_dir)
+
+
+def compareClassifier(classifier, dataset, config):
+    results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{classifier.type_}_{classifier.name}")
+
+    dataset.df.drop('diff', axis=1, inplace=True)  # same feature as binary encoded target
+    dataset.apply(ml.binaryEncode, dataset.target)
+
+    X_train, X_test, y_train, y_test = dataset.split(shuffle=False)
+
+    cv_results = searchCV(classifier, X_train, y_train)
+
+    models = [('Default', deepcopy(classifier.base)),
+              ('Grid Searched', cv_results.best_estimator_),
+              ('Recorded Best', deepcopy(classifier.base).set_params(**classifier.best_params))]
+
+    logging.info("Fitting and predicting")
+    y_preds = []
+    for name, model in models:
+        model.fit(X_train, y_train)
+        y_preds.append((name, model.predict(X_test)))
+
+    ml.classifier.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+
+    ml.classifier.plotPrediction(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+
+
+def compareParams(dataset: Dataset, config: Config) -> None:
     """
     The user can select an ML technique to be grid-searched and cross-validated.
     A default, grid and best model will be fitted and predicted. The predictions
@@ -165,10 +320,15 @@ def findEstimatorParams(dataset: Dataset, config: Config) -> None:
     while True:
         print(f"""
         0 - Back
-        1 - Gradient Boosting Regressor
-        2 - Random Forest Regressor
-        3 - K-Neighbors Regressor
-        4 - MLP Regressor
+        Estimators:
+            1 - Gradient Boosting Regressor
+            2 - Random Forest Regressor
+            3 - MLP Regressor
+        Classifiers:
+            4 - Gradient Boosting Classifier
+            5 - Random Forest Classifier
+            6 - Ridge Classifier
+            7 - Decision Tree Classifier
         """)
         choice = input("Which estimator model: ")
         try:
@@ -177,42 +337,30 @@ def findEstimatorParams(dataset: Dataset, config: Config) -> None:
             print('\nPlease enter a valid response!')
             choice = None
 
-        estimator = None
+        model_config = None
         if choice is not None:
             if choice == 0:
                 return
             elif choice == 1:
-                estimator = getGradientBoostingRegressor()
+                model_config = getGradientBoostingRegressor()
             elif choice == 2:
-                estimator = getRandomForestRegressor()
+                model_config = getRandomForestRegressor()
             elif choice == 3:
-                estimator = getKNeighborsRegressor()
+                model_config = getMLPRegressor()
             elif choice == 4:
-                estimator = getMLPRegressor()
+                model_config = getGradientBoostingClassifier()
+            elif choice == 5:
+                model_config = getRandomForestClassifier()
+            elif choice == 6:
+                model_config = getRidgeClassifier()
+            elif choice == 7:
+                model_config = getDecisionTreeClassifier()
             else:
                 print("\nPlease enter a valid choice!")
 
-        if estimator is not None:
-            estimator = Model(config.model, **estimator)
-
-            results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{estimator.type_}_{estimator.name}")
-
-            cv_results = searchCV(estimator, X_train, y_train)
-
-            models = [('Default', deepcopy(estimator.base)),
-                      ('Grid Searched', cv_results.best_estimator_),
-                      ('Recorded Best', deepcopy(estimator.base).set_params(**estimator.best_params))]
-
-            logging.info("Fitting and predicting")
-            y_preds = []
-            for name, model in models:
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-                y_preds.append((name, np.clip(y_pred, 0, None)))
-
-            ml.estimator.resultAnalysis(y_test, y_preds, display=False, dataset_name=dataset.name, dir_=results_dir)
-
-            y_preds = [(name, Series(y_pred, index=y_test.index).resample('D').sum()) for name, y_pred in y_preds]
-            ml.estimator.plotPrediction(y_train.resample('D').sum(), y_test.resample('D').sum(), y_preds,
-                                        target=dataset.target,
-                                        dataset_name=dataset.name, dir_=results_dir)
+        if model_config is not None:
+            model = Model(config.model, **model_config)
+            if model.type_ == 'estimator':
+                compareEstimator(model, dataset, config)
+            elif model.type_ == 'classifier':
+                compareClassifier(model, deepcopy(dataset), config)
