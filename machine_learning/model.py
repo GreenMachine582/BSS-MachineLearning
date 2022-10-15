@@ -190,8 +190,8 @@ class Model(object):
             if dir_:
                 plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
         elif hasattr(self.model, 'coef_'):
-            fig, ax = plt.subplots()
-            coef = Series(self.model.coef_, index=feature_names)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            coef = Series(self.model.coef_[0], index=X_test.columns)
             imp_coef = coef.sort_values()
             rcParams['figure.figsize'] = (8.0, 10.0)
             imp_coef.plot(kind="barh")
@@ -199,7 +199,7 @@ class Model(object):
             if dir_:
                 plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
         else:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(10, 10))
             result = permutation_importance(self.model, X_test, y_test, n_repeats=10, n_jobs=-1)
             sorted_idx = result.importances_mean.argsort()
             ax.boxplot(result.importances[sorted_idx].T, vert=False, labels=np.array(feature_names)[sorted_idx])

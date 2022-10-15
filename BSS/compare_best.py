@@ -67,10 +67,10 @@ def compareEstimator(estimator, dataset, config):
 
     estimator.save()
 
-    estimator.resultAnalysis(y_test, y_pred, plot=False, dataset_name=dataset.name, dir_=results_dir)
-    estimator.plotPrediction(y_test, Series(y_pred, index=y_test.index).resample('D').sum(), y_train,
-                             target=dataset.target)
-
+    estimator.resultAnalysis(y_test, y_pred, plot=False, dataset_name=f"{dataset.name} Recorded Best")
+    estimator.plotPrediction(y_test.resample('D').sum(), Series(y_pred, index=y_test.index).resample('D').sum(),
+                             y_train.resample('D').sum(), target=dataset.target,
+                             dataset_name=f"{dataset.name} Recorded Best", dir_=results_dir)
     estimator.plotImportance(dataset.df.columns, X_test, y_test, dataset_name=dataset.name, dir_=results_dir)
 
 
@@ -88,8 +88,7 @@ def compareClassifier(classifier, dataset, config):
 
     classifier.save()
 
-    classifier.resultAnalysis(y_test, y_pred, plot=False, dataset_name=dataset.name)
-    classifier.plotPrediction(y_test, y_pred, target=dataset.target, dataset_name=dataset.name)
+    classifier.resultAnalysis(y_test, y_pred, plot=False, dataset_name=f"{dataset.name} Recorded Best")
     classifier.plotImportance(dataset.df.columns, X_test, y_test, dataset_name=dataset.name, dir_=results_dir)
 
 
