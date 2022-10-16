@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+from mlxtend.evaluate import bias_variance_decomp
 from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS
@@ -12,19 +13,7 @@ import machine_learning as ml
 local_dir = os.path.dirname(__file__)
 
 
-def biasVarianceDecomp(model, X_train, X_test, y_train, y_test, n_iter=5):
-    all_pred = np.zeros((n_iter, y_test.size))
-    for i in range(n_iter):
-        all_pred[i] = model.fit(X_train, y_train).predict(X_test)
-
-    avg_preds = np.mean(all_pred, axis=0)
-    avg_expected_loss = np.apply_along_axis(lambda x: ((x - y_test) ** 2).mean(), axis=1, arr=all_pred).mean()
-    avg_bias = np.sum((avg_preds - y_test) ** 2) / y_test.size
-    avg_var = np.sum((avg_preds - all_pred) ** 2) / all_pred.size
-    return avg_expected_loss, avg_bias, avg_var
-
-
-def _plotBullseye(ax, x, y, title=''):
+def _plotBullseye(ax, x, y, title: str = ''):
     circle1 = plt.Circle((0, 0), 0.08, color='red', alpha=0.6)
     circle2 = plt.Circle((0, 0), 0.25, color='blue', linewidth=0.8, alpha=0.3, fill=False)
     circle3 = plt.Circle((0, 0), 0.55, color='red', linewidth=0.8, alpha=0.3, fill=False)
@@ -37,11 +26,34 @@ def _plotBullseye(ax, x, y, title=''):
     ax.set_aspect('equal')
     ax.set_yticklabels([])
     ax.set_xticklabels([])
-    ax.title(title)
+    ax.set_title(title)
 
     ax.scatter(x, y, c='g')
     ax.axis([-1, 1, -1, 1])
     return ax
+
+
+def biasVarianceDecomp(X_train, X_test, y_train, y_test, n_iter: int = 10, display: bool = False,
+                       dataset_name: str = '', dir_: str = ''):
+    estimator = BSS.compare_params.getMLPRegressor()
+    model = estimator['base'].set_params(**estimator['best_params'])
+    loss, bias, var = [], [], []
+    for i in range(n_iter):
+        avg_expected_loss, avg_bias, avg_var = bias_variance_decomp(model, X_train.values, y_train.values,
+                                                                    X_test.values, y_test.values,
+                                                                    num_rounds=5, loss='mse')
+        if display:
+            print('Average expected loss: %.3f' % avg_expected_loss)
+            print('Average bias: %.3f' % avg_bias)
+            print('Average variance: %.3f' % avg_var)
+        loss.append(avg_expected_loss)
+        bias.append(avg_bias)
+        var.append(avg_var)
+        logging.info(f"Bias variance iter: {i + 1}/{n_iter}")
+
+    fig, ax = plt.subplots()
+    _plotBullseye(ax, bias, var, title=estimator['fullname'])
+    plt.show()
 
 
 def main(dir_=local_dir):

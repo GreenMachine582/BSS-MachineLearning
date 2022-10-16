@@ -4,56 +4,11 @@ import logging
 from copy import deepcopy
 
 import numpy as np
-from matplotlib import pyplot as plt
-from mlxtend.evaluate import bias_variance_decomp
 from pandas import Series
 
 import BSS
 import machine_learning as ml
-from machine_learning import Config, Dataset, Model, utils
-
-
-def _plotBullseye(ax, x, y, title: str = ''):
-    circle1 = plt.Circle((0, 0), 0.08, color='red', alpha=0.6)
-    circle2 = plt.Circle((0, 0), 0.25, color='blue', linewidth=0.8, alpha=0.3, fill=False)
-    circle3 = plt.Circle((0, 0), 0.55, color='red', linewidth=0.8, alpha=0.3, fill=False)
-    circle4 = plt.Circle((0, 0), 0.85, color='blue', linewidth=0.8, alpha=0.3, fill=False)
-    ax.add_artist(circle4)
-    ax.add_artist(circle3)
-    ax.add_artist(circle2)
-    ax.add_artist(circle1)
-
-    ax.set_aspect('equal')
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    ax.set_title(title)
-
-    ax.scatter(x, y, c='g')
-    ax.axis([-1, 1, -1, 1])
-    return ax
-
-
-def biasVarianceDecomp(X_train, X_test, y_train, y_test, n_iter: int = 10, display: bool = False,
-                       dataset_name: str = '', dir_: str = ''):
-    estimator = BSS.compare_params.getMLPRegressor()
-    model = estimator['base'].set_params(**estimator['best_params'])
-    loss, bias, var = [], [], []
-    for i in range(n_iter):
-        avg_expected_loss, avg_bias, avg_var = bias_variance_decomp(model, X_train.values, y_train.values,
-                                                                    X_test.values, y_test.values,
-                                                                    num_rounds=5, loss='mse')
-        if display:
-            print('Average expected loss: %.3f' % avg_expected_loss)
-            print('Average bias: %.3f' % avg_bias)
-            print('Average variance: %.3f' % avg_var)
-        loss.append(avg_expected_loss)
-        bias.append(avg_bias)
-        var.append(avg_var)
-        logging.info(f"Bias variance iter: {i + 1}/{n_iter}")
-
-    fig, ax = plt.subplots()
-    _plotBullseye(ax, bias, var, title=estimator['fullname'])
-    plt.show()
+from machine_learning import Config, Dataset, Model
 
 
 def compareEstimator(estimator, dataset, config):
@@ -113,7 +68,6 @@ def compareBest(dataset: Dataset, config: Config) -> None:
             5 - Random Forest Classifier
             6 - Ridge Classifier
             7 - MLP Classifier
-        8 - Bias Variance Decomposition (TBA)
         """)
         choice = input("Which option number: ")
         try:
@@ -140,10 +94,6 @@ def compareBest(dataset: Dataset, config: Config) -> None:
                 model_config = BSS.compare_params.getRidgeClassifier()
             elif choice == 7:
                 model_config = BSS.compare_params.getMLPClassifier()
-            elif choice == 8:
-                pass
-                # X_train, X_test, y_train, y_test = dataset.split(random_state=config.random_state, shuffle=False)
-                # biasVarianceDecomp(X_train, X_test, y_train, y_test)
             else:
                 print("\nPlease enter a valid choice!")
 
