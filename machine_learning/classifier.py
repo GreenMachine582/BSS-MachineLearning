@@ -58,7 +58,22 @@ def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: st
     else:
         raise TypeError(f"'y_pred': Expected type 'tuple | dict | list', got {type(y_pred).__name__} instead")
 
-    if len(y_preds) == 4:
+    if len(y_preds) == 3:
+        names, y_preds = zip(*y_preds)
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex='col', sharey='row')
+        cm = confusion_matrix(y_test, y_preds[0])
+        graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax1)
+        graph.set(xlabel=names[0])
+        cm = confusion_matrix(y_test, y_preds[1])
+        graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax2)
+        graph.set(xlabel=names[1])
+        cm = confusion_matrix(y_test, y_preds[2])
+        graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax3)
+        graph.set(xlabel=names[2])
+        fig.suptitle(f"Classifier Prediction - {dataset_name}")
+        if dir_:
+            plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    elif len(y_preds) == 4:
         names, y_preds = zip(*y_preds)
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
         cm = confusion_matrix(y_test, y_preds[0])
