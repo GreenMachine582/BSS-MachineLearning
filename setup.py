@@ -6,9 +6,9 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='bss-machinelearning',
-    version='v0.4.4',
+    version='v0.4.5',
     author='Matthew Johnson, Noel Williams, Yisha Chen, Yuki-Jiayi Li',
-    author_email='greenchicken1902@gmail.com, noelosdub@gmail.com',
+    author_email='greenchicken1902@gmail.com',
     maintainer='Matthew Johnson',
     maintainer_email='greenchicken1902@gmail.com',
     description='Forecasting Demand for Bike Sharing Systems and Analysis with Python',
@@ -17,8 +17,9 @@ setup(
     url='https://github.com/GreenMachine582/BSS-MachineLearning',
     include_package_data=True,
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
         'Programming Language :: Python',
         'Operating System :: OS Independent',
         'License :: OSI Approved :: MIT License',
@@ -26,6 +27,6 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only'
     ],
-    keywords='bss, machine-learning, cross-validation, classifiers, estimators',
+    keywords='bss, machine-learning, cross-validation, regression, classification',
     python_requires='>=3.10, <4',
 )

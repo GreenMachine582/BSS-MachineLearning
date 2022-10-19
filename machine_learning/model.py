@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from copy import deepcopy
 from typing import Any
 
 import numpy as np
@@ -123,6 +124,25 @@ class Model(object):
 
         path_ = utils.makePath(self.dir_, self.FOLDER_NAME)
         return save(path_, self.name, self.model)
+
+    def createModel(self, param_type: str = 'best', **kwargs) -> Any:
+        """
+
+        :param param_type:
+        :param kwargs: Additional keywords to pass to sklearn's set_params
+        :return: None
+        """
+        # TODO: Add documentation
+        logging.info("Creating")
+        if param_type == 'best':
+            params = self.best_params
+        elif param_type == 'grid':
+            params = self.grid_params
+        else:
+            raise ValueError("The parameter param_type must be either 'best' or 'grid'")
+
+        self.model = deepcopy(self.base).set_params(**dict(params, **kwargs))
+        return self.model
 
     def plotPrediction(self, y_test: Series, y_pred: ndarray, y_train: Series = None, **kwargs) -> None:
         """

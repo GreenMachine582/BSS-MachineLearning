@@ -1,6 +1,5 @@
 import logging
 import os
-from copy import deepcopy
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -61,7 +60,7 @@ def main(dataset: Dataset, config: Config) -> None:
     X_train, X_test, y_train, y_test = dataset.split(shuffle=False)
 
     estimator = Model(config.model, **BSS.compare_params.getMLPRegressor())
-    estimator.update(model=deepcopy(estimator.base).set_params(**estimator.best_params))
+    estimator.createModel(param_type='best')
 
     estimator, errors = partialFit(estimator, estimator.best_params['max_iter'], X_train, X_test, y_train, y_test)
 
@@ -83,7 +82,7 @@ def main(dataset: Dataset, config: Config) -> None:
 
     # part2
     estimator = Model(config.model, **BSS.compare_params.getGradientBoostingRegressor())
-    estimator.update(model=deepcopy(estimator.base).set_params(**estimator.best_params))
+    estimator.createModel(param_type='best')
 
     estimator.model.fit(X_train, y_train)
     errors = stagedPredict(estimator, estimator.best_params['n_estimators'], X_test, y_test)

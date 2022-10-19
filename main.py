@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 import sys
-import warnings
 from copy import deepcopy
 from time import time
 
@@ -63,8 +62,6 @@ def main() -> None:
         3 - Compare Default Classifiers (CV)
         4 - Compare Params (SearchCV)
         5 - Compare Best Models
-        6 - Staged Predict (Alpha)
-        7 - Testing (Alpha)
         """)
         choice = input("Which option number: ")
         try:
@@ -86,12 +83,6 @@ def main() -> None:
                 BSS.compare_params.compareParams(deepcopy(dataset), config)
             elif choice == 5:
                 BSS.compare_best.compareBest(deepcopy(dataset), config)
-            elif choice == 6:
-                warnings.warn("This option is in Alpha stage, expect errors")
-                BSS.staged_predict.main(deepcopy(dataset), config)
-            elif choice == 7:
-                warnings.warn("This option is in Alpha stage, expect errors")
-                BSS.test.main(ROOT_DIR)
             else:
                 print("\nPlease enter a valid choice!")
 

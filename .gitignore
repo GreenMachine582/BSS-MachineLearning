@@ -2,9 +2,9 @@
 log.txt
 .idea
 venv
-configs/*
-models/*
-results/*
+configs/
+models/
+results/
 Jupyter Notebooks/.ipynb_checkpoints
 Jupyter Notebooks/*.ipynb
 Jupyter Notebooks/*.html

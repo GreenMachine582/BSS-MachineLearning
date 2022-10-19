@@ -99,7 +99,7 @@ def compareBest(dataset: Dataset, config: Config) -> None:
 
         if model_config is not None:
             model = Model(config.model, **model_config)
-            model.update(model=deepcopy(model.base).set_params(**model.best_params))
+            model.createModel(param_type='best')
             if model.type_ == 'estimator':
                 compareEstimator(model, dataset, config)
             elif model.type_ == 'classifier':

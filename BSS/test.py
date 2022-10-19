@@ -1,7 +1,6 @@
 import logging
 import os
 
-import numpy as np
 from matplotlib import pyplot as plt
 from mlxtend.evaluate import bias_variance_decomp
 from sklearn.ensemble import GradientBoostingRegressor
@@ -33,13 +32,11 @@ def _plotBullseye(ax, x, y, title: str = ''):
     return ax
 
 
-def biasVarianceDecomp(X_train, X_test, y_train, y_test, n_iter: int = 10, display: bool = False,
+def biasVarianceDecomp(model, X_train, X_test, y_train, y_test, n_iter: int = 10, display: bool = False,
                        dataset_name: str = '', dir_: str = ''):
-    estimator = BSS.compare_params.getMLPRegressor()
-    model = estimator['base'].set_params(**estimator['best_params'])
     loss, bias, var = [], [], []
     for i in range(n_iter):
-        avg_expected_loss, avg_bias, avg_var = bias_variance_decomp(model, X_train.values, y_train.values,
+        avg_expected_loss, avg_bias, avg_var = bias_variance_decomp(model.model, X_train.values, y_train.values,
                                                                     X_test.values, y_test.values,
                                                                     num_rounds=5, loss='mse')
         if display:
@@ -52,8 +49,9 @@ def biasVarianceDecomp(X_train, X_test, y_train, y_test, n_iter: int = 10, displ
         logging.info(f"Bias variance iter: {i + 1}/{n_iter}")
 
     fig, ax = plt.subplots()
-    _plotBullseye(ax, bias, var, title=estimator['fullname'])
+    _plotBullseye(ax, bias, var, title=model.fullname)
     plt.show()
+    return loss, bias, var
 
 
 def main(dir_=local_dir):
@@ -73,10 +71,10 @@ def main(dir_=local_dir):
                    'subsample': 0.3}
 
     loss, bias, var = [], [], []
+    model = ml.Model(config.model, base=GradientBoostingRegressor(), best_params=best_params)
     for _ in range(10):
-        avg_expected_loss, avg_bias, avg_var = biasVarianceDecomp(GradientBoostingRegressor(**best_params),
-                                                                  X_train, X_test, y_train, y_test,
-                                                                  n_iter=2)
+        model.createModel(param_type='best')
+        avg_expected_loss, avg_bias, avg_var = biasVarianceDecomp(model, X_train, X_test, y_train, y_test, n_iter=2)
         # print('Average expected loss: %.3f' % avg_expected_loss)
         # print('Average bias: %.3f' % avg_bias)
         # print('Average variance: %.3f' % avg_var)
