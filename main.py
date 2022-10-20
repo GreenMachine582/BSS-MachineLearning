@@ -51,10 +51,10 @@ def main() -> None:
 
     :return: None
     """
-    config, dataset = getProject('London_hour')
+    logging.info('Starting program')
+    config, dataset = getProject('DC_day')
 
-    run = True
-    while run:
+    while True:
         print("""
         0 - Quit
         1 - Process Datasets (Includes EDA)
@@ -72,7 +72,7 @@ def main() -> None:
 
         if choice is not None:
             if choice == 0:
-                return
+                break
             elif choice == 1:
                 BSS.process.main(ROOT_DIR)
             elif choice == 2:
@@ -85,9 +85,8 @@ def main() -> None:
                 BSS.compare_best.compareBest(deepcopy(dataset), config)
             else:
                 print("\nPlease enter a valid choice!")
+    quit_program()
 
 
 if __name__ == '__main__':
-    logging.info('Starting program')
     main()
-    raise quit_program()

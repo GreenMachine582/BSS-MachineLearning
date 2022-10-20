@@ -2,7 +2,7 @@ import logging
 import os
 
 from matplotlib import pyplot as plt
-from mlxtend.evaluate import bias_variance_decomp
+# from mlxtend.evaluate import bias_variance_decomp
 from sklearn.ensemble import GradientBoostingRegressor
 
 import BSS

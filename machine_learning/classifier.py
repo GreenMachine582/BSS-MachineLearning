@@ -6,9 +6,9 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from pandas import DataFrame, Series
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn import metrics
 
-from machine_learning import utils
+import machine_learning as ml
 
 
 def binaryEncode(df: DataFrame, target: str) -> DataFrame:
@@ -25,10 +25,11 @@ def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     if df[target].dtype not in ['float64', 'int64']:
         raise NotImplementedError(f"The target variables type '{df[target].dtype}' are not supported")
 
+    # binary encodes the feature
     df[target] = [int(df[target][max(0, i - 1)] < df[target][min(len(df[target]) - 1, i)])
                   for i in range(len(df[target]))]
 
-    # Checks for class imbalance
+    # checks for class imbalance
     if len(df[target] == 0) != len(df[target] == 1):
         logging.warning("Class imbalance is present")
 
@@ -36,7 +37,7 @@ def binaryEncode(df: DataFrame, target: str) -> DataFrame:
     return df
 
 
-def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: str = '', dir_: str = '') -> None:
+def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: str = '', results_dir: str = '') -> None:
     """
     Plot the predictions in a confusion matrix format.
 
@@ -44,7 +45,7 @@ def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: st
     :param y_pred: Classifier predictions, should be a tuple[str, ndarray] | dict[str: ndarray
      | list[tuple[str, ndarray]
     :param dataset_name: Name of dataset, should be a str
-    :param dir_: Save location for figures, should be a str
+    :param results_dir: Save location for figures, should be a str
     :return: None
     """
     logging.info("Plotting predictions")
@@ -61,50 +62,50 @@ def plotPrediction(y_test: Series, y_pred: tuple | dict | list, dataset_name: st
     if len(y_preds) == 3:
         names, y_preds = zip(*y_preds)
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex='col', sharey='row')
-        cm = confusion_matrix(y_test, y_preds[0])
+        cm = metrics.confusion_matrix(y_test, y_preds[0])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax1)
         graph.set(xlabel=names[0])
-        cm = confusion_matrix(y_test, y_preds[1])
+        cm = metrics.confusion_matrix(y_test, y_preds[1])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax2)
         graph.set(xlabel=names[1])
-        cm = confusion_matrix(y_test, y_preds[2])
+        cm = metrics.confusion_matrix(y_test, y_preds[2])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax3)
         graph.set(xlabel=names[2])
         fig.suptitle(f"Classifier Prediction - {dataset_name}")
-        if dir_:
-            plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        if results_dir:
+            plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     elif len(y_preds) == 4:
         names, y_preds = zip(*y_preds)
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
-        cm = confusion_matrix(y_test, y_preds[0])
+        cm = metrics.confusion_matrix(y_test, y_preds[0])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax1)
         graph.set(xlabel=names[0])
-        cm = confusion_matrix(y_test, y_preds[1])
+        cm = metrics.confusion_matrix(y_test, y_preds[1])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax2)
         graph.set(xlabel=names[1])
-        cm = confusion_matrix(y_test, y_preds[2])
+        cm = metrics.confusion_matrix(y_test, y_preds[2])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax3)
         graph.set(xlabel=names[2])
-        cm = confusion_matrix(y_test, y_preds[3])
+        cm = metrics.confusion_matrix(y_test, y_preds[3])
         graph = sns.heatmap(cm / np.sum(cm), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False, ax=ax4)
         graph.set(xlabel=names[3])
         fig.suptitle(f"Classifier Prediction - {dataset_name}")
-        if dir_:
-            plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+        if results_dir:
+            plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     else:
         for name, y_pred in y_preds:
             fig, ax = plt.subplots()
-            cm = confusion_matrix(y_test, y_pred)
+            cm = metrics.confusion_matrix(y_test, y_pred)
             graph = sns.heatmap((cm / np.sum(cm)), annot=True, square=True, cmap='Greens', fmt='.2%', cbar=False)
             graph.set(xlabel=name)
             fig.suptitle(f"{name} Classifier Prediction - {dataset_name}")
-            if dir_:
-                plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+            if results_dir:
+                plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
 
 
 def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = True, display: bool = True,
-                   dataset_name: str = '', dir_: str = '') -> dict:
+                   dataset_name: str = '', results_dir: str = '') -> dict:
     """
     Calculate the result analysis with options to display and plot.
 
@@ -114,7 +115,7 @@ def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = Tru
     :param plot: Whether to plot the results, should be a bool
     :param display: Whether to show the results, should be a bool
     :param dataset_name: Name of dataset, should be a str
-    :param dir_: Save location for figures, should be a str
+    :param results_dir: Save location for figures, should be a str
     :return: results - dict[str: list[str | float]]
     """
     logging.info("Analysing results")
@@ -132,10 +133,10 @@ def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = Tru
 
     for name, y_pred in y_preds:
         results['names'].append(name)
-        results['accuracy'].append(accuracy_score(y_test, y_pred))
-        results['precision'].append(precision_score(y_test, y_pred))
-        results['recall'].append(recall_score(y_test, y_pred))
-        results['f1'].append(f1_score(y_test, y_pred))
+        results['accuracy'].append(metrics.accuracy_score(y_test, y_pred))
+        results['precision'].append(metrics.precision_score(y_test, y_pred))
+        results['recall'].append(metrics.recall_score(y_test, y_pred))
+        results['f1'].append(metrics.f1_score(y_test, y_pred))
 
         if display:
             print("\nModel:", name)
@@ -148,12 +149,12 @@ def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = Tru
         return results
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 8), sharex='col')
-    utils._plotBar(ax1, results['names'], results['accuracy'], 'Accuracy')
-    utils._plotBar(ax2, results['names'], results['precision'], 'Precision')
-    utils._plotBar(ax3, results['names'], results['recall'], 'Recall')
-    utils._plotBar(ax4, results['names'], results['f1'], 'F1')
+    ml.utils._plotBar(ax1, results['names'], results['accuracy'], 'Accuracy')
+    ml.utils._plotBar(ax2, results['names'], results['precision'], 'Precision')
+    ml.utils._plotBar(ax3, results['names'], results['recall'], 'Recall')
+    ml.utils._plotBar(ax4, results['names'], results['f1'], 'F1')
     fig.suptitle(f"Result Analysis - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
     return results

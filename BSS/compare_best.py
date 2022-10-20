@@ -12,6 +12,7 @@ from machine_learning import Config, Dataset, Model
 
 
 def compareEstimator(estimator, dataset, config):
+    # TODO: documentation
     results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{estimator.type_}_{estimator.name}")
 
     X_train, X_test, y_train, y_test = dataset.split(shuffle=False)
@@ -24,12 +25,13 @@ def compareEstimator(estimator, dataset, config):
 
     estimator.resultAnalysis(y_test, y_pred, plot=False, dataset_name=f"{dataset.name} Recorded Best")
     estimator.plotPrediction(y_test.resample('D').sum(), Series(y_pred, index=y_test.index).resample('D').sum(),
-                             y_train.resample('D').sum(), target=dataset.target,
-                             dataset_name=f"{dataset.name} Recorded Best", dir_=results_dir)
-    estimator.plotImportance(dataset.df.columns, X_test, y_test, dataset_name=dataset.name, dir_=results_dir)
+                             y_train.resample('D').sum(), ylabel=dataset.target,
+                             dataset_name=f"{dataset.name} Recorded Best", results_dir=results_dir)
+    estimator.plotImportance(X_train.columns, X_test, y_test, dataset_name=dataset.name, results_dir=results_dir)
 
 
 def compareClassifier(classifier, dataset, config):
+    # TODO: documentation
     results_dir = ml.utils.makePath(config.dir_, config.results_folder, f"{classifier.type_}_{classifier.name}")
 
     dataset.df.drop('diff', axis=1, inplace=True)  # same feature as binary encoded target
@@ -44,7 +46,7 @@ def compareClassifier(classifier, dataset, config):
     classifier.save()
 
     classifier.resultAnalysis(y_test, y_pred, plot=False, dataset_name=f"{dataset.name} Recorded Best")
-    classifier.plotImportance(dataset.df.columns, X_test, y_test, dataset_name=dataset.name, dir_=results_dir)
+    classifier.plotImportance(dataset.df.columns, X_test, y_test, dataset_name=dataset.name, results_dir=results_dir)
 
 
 def compareBest(dataset: Dataset, config: Config) -> None:

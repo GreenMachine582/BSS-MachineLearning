@@ -30,8 +30,8 @@ def searchCV(model: Model, X_train: DataFrame, y_train: Series, display: bool = 
     """
     logging.info(f"Grid searching '{model.name}'")
     if search_method == "randomised":
-        cv_results = RandomizedSearchCV(model.base, model.grid_params, n_iter=100, n_jobs=-1,
-                                        random_state=random_state, cv=TimeSeriesSplit(10), verbose=2)
+        cv_results = RandomizedSearchCV(model.base, model.grid_params, n_iter=100, n_jobs=-1, random_state=random_state,
+                                        cv=TimeSeriesSplit(10), verbose=2)
     elif search_method == "grid":
         cv_results = GridSearchCV(model.base, model.grid_params, n_jobs=-1, cv=TimeSeriesSplit(10), verbose=2)
     else:
@@ -250,12 +250,10 @@ def compareEstimator(estimator, dataset, config):
         y_pred = model.predict(X_test)
         y_preds.append((name, np.clip(y_pred, 0, None)))
 
-    ml.estimator.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
-
+    ml.estimator.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, results_dir=results_dir)
     y_preds = [(name, Series(y_pred, index=y_test.index).resample('D').sum()) for name, y_pred in y_preds]
-    ml.estimator.plotPrediction(y_train.resample('D').sum(), y_test.resample('D').sum(), y_preds,
-                                target=dataset.target,
-                                dataset_name=dataset.name, dir_=results_dir)
+    ml.estimator.plotPrediction(y_train.resample('D').sum(), y_test.resample('D').sum(), y_preds, ylabel=dataset.target,
+                                dataset_name=dataset.name, results_dir=results_dir)
 
 
 def compareClassifier(classifier, dataset, config):
@@ -278,9 +276,9 @@ def compareClassifier(classifier, dataset, config):
         model.fit(X_train, y_train)
         y_preds.append((name, model.predict(X_test)))
 
-    ml.classifier.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+    ml.classifier.resultAnalysis(y_test, y_preds, dataset_name=dataset.name, results_dir=results_dir)
 
-    ml.classifier.plotPrediction(y_test, y_preds, dataset_name=dataset.name, dir_=results_dir)
+    ml.classifier.plotPrediction(y_test, y_preds, dataset_name=dataset.name, results_dir=results_dir)
 
 
 def compareParams(dataset: Dataset, config: Config) -> None:

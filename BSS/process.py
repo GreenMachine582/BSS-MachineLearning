@@ -8,28 +8,28 @@ import seaborn as sns
 from pandas import DataFrame, Series
 
 import machine_learning as ml
-from machine_learning import Dataset, utils
+from machine_learning import Dataset
 
 sns.set(style='darkgrid')
 
 
-def preProcess(df: DataFrame, name: str) -> DataFrame:
+def preProcess(df: DataFrame, dataset_name: str) -> DataFrame:
     """
     Pre-Process the BSS dataset, by generalising feature names, correcting
     datatypes, normalising values and handling invalid instances.
 
     :param df: BSS dataset, should be a DataFrame
-    :param name: Dataset's filename, should be a str
+    :param dataset_name: Name of dataset, should be a str
     :return: df - DataFrame
     """
     df = ml.handleMissingData(df)
 
-    if 'DC' in name:
+    if 'DC' in dataset_name:
         # Renaming features
         df.rename(columns={'dteday': 'datetime', 'holiday': 'is_holiday', 'weathersit': 'weather_code',
                            'windspeed': 'wind_speed'}, inplace=True)
 
-        if 'hour' in name:
+        if 'hour' in dataset_name:
             df['hr'] = pd.to_datetime(df['hr'], format='%H').dt.strftime('%H:%M:%S')
             df['datetime'] = df['datetime'] + ' ' + df['hr']
             df.drop('hr', axis=1, inplace=True)
@@ -40,7 +40,7 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
         df['is_weekend'] = df['weekday'].apply(lambda x: 1 if x in [6, 0] else 0)
         df.drop(['instant', 'weekday', 'workingday'], axis=1, inplace=True)
 
-    elif 'London' in name:
+    elif 'London' in dataset_name:
         # Renaming features
         df.rename(columns={'timestamp': 'datetime', 't1': 'temp', 't2': 'atemp'}, inplace=True)
         df['datetime'] = pd.to_datetime(df['datetime'])
@@ -66,11 +66,11 @@ def preProcess(df: DataFrame, name: str) -> DataFrame:
 
     df.set_index('datetime', drop=False, inplace=True)
 
-    logging.info(f"Pre-Processed {name} dataset")
+    logging.info(f"Pre-Processed {dataset_name} dataset")
     return df
 
 
-def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '') -> None:
+def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', results_dir: str = '') -> None:
     """
     Performs initial investigations on data to discover patterns, to spot
     anomalies, to test hypothesis and to check assumptions with the help
@@ -78,7 +78,7 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
 
     :param df: BSS dataset, should be a DataFrame
     :param dataset_name: Name of dataset, should be a str
-    :param dir_: Save location for figures, should be a str
+    :param results_dir: Save location for figures, should be a str
     :return: None
     """
     logging.info("Exploratory Data Analysis")
@@ -87,8 +87,8 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
     graph = sns.heatmap(df.corr(), annot=True, square=True, cmap='Greens', fmt='.2f')
     graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
     fig.suptitle(f"Corresponding Matrix - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     # Month/Day Plot
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 6), gridspec_kw={'width_ratios': [1, 3]})
@@ -97,8 +97,8 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
     graph = sns.lineplot(x=pd.DatetimeIndex(df.index).day, y='cnt', data=df, ax=ax2)
     graph.set(xlabel='Day', ylabel=None)
     fig.suptitle(f"Demand Vs (Month and Day) - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     # Groups BSS hourly instances into summed days, makes it easier to
     #   plot the line graph.
@@ -110,8 +110,8 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
     plt.xlabel('Date')
     plt.ylabel('Demand')
     fig.suptitle(f"Demand Vs Date - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     # Plots BSS Demand of weather codes
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey='row', gridspec_kw={'width_ratios': [2, 1]})
@@ -132,8 +132,8 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
     graph.set(xlabel=None, ylabel=None)
     graph.set_xticklabels(['Weekday', 'Weekend'], rotation=30)
     fig.suptitle(f"Demand Vs (Season, isHoliday, isWeekend) - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     # Plots Normalised Environmental Values
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(6, 5), sharey='row')
@@ -146,8 +146,8 @@ def exploratoryDataAnalysis(df: DataFrame, dataset_name: str = '', dir_: str = '
     graph = sns.boxplot(y=df['wind_speed'], ax=ax4)
     graph.set(title='Wind Speed', ylabel=None)
     fig.suptitle(f"Normalised Environmental Values - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     plt.show()  # displays all figures
 
@@ -171,10 +171,10 @@ def processData(df: DataFrame) -> DataFrame:
     # Adds historical data
     df['prev'] = df['cnt'].shift()
     df['diff'] = df['cnt'].diff()
-    df['diff'] = df['diff'].apply(lambda x: int(bool(x > 0)))
+    df['diff'] = df['diff'].apply(lambda x: int(bool(x > 0)))  # binary encoding
     df['prev_2'] = df['prev'].shift()
     df['diff_2'] = df['prev'].diff()
-    df['diff_2'] = df['diff_2'].apply(lambda x: int(bool(x > 0)))
+    df['diff_2'] = df['diff_2'].apply(lambda x: int(bool(x > 0)))  # binary encoding
 
     df = ml.handleMissingData(df)
 
@@ -225,7 +225,7 @@ def main(dir_: str) -> None:
     for name in datasets:
         config = ml.Config(dir_, name)
 
-        results_dir = utils.makePath(dir_, config.results_folder, 'process')
+        results_dir = ml.utils.makePath(dir_, config.results_folder, 'process')
 
         # Loads the BSS dataset
         dataset = ml.Dataset(config.dataset)
@@ -240,7 +240,7 @@ def main(dir_: str) -> None:
 
         dataset.df.drop('datetime', axis=1, inplace=True)
 
-        exploratoryDataAnalysis(dataset.df, dataset_name=dataset.name, dir_=results_dir)
+        exploratoryDataAnalysis(dataset.df, dataset_name=dataset.name, results_dir=results_dir)
 
         dataset.apply(processData)
         dataset.update(name=(name + '-processed'))
@@ -250,7 +250,7 @@ def main(dir_: str) -> None:
         graph = sns.heatmap(dataset.df.corr(), annot=True, square=True, cmap='Greens', fmt='.2f')
         graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
         fig.suptitle(f"Corresponding Matrix - {dataset.name}")
-        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
         plt.show()
 
         dataset.apply(pd.get_dummies)  # apply one hot encoding to categorical features
@@ -259,5 +259,5 @@ def main(dir_: str) -> None:
         graph = sns.heatmap(dataset.df.corr(), annot=True, cmap='Greens', fmt='.2f', cbar=False)
         graph.set_xticklabels(graph.get_xticklabels(), rotation=40)
         fig.suptitle(f"Encoded Corresponding Matrix - {dataset.name}")
-        plt.savefig(utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
         plt.show()

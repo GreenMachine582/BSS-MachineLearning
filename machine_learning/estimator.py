@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 from pandas import Series
 from sklearn import metrics
 
-from machine_learning import utils
+import machine_learning as ml
 
 
-def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list, target: str = 'Target',
-                   dataset_name: str = '', dir_: str = '') -> None:
+def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list, ylabel: str = 'Target',
+                   dataset_name: str = '', results_dir: str = '') -> None:
     """
     Plot the prediction on a line graph.
 
@@ -19,9 +19,9 @@ def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list,
     :param y_test: Testing dependent features, should be a Series
     :param y_pred: Predicted dependent variables, should be a tuple[str, ndarray] | dict[str: ndarray
      | list[tuple[str, ndarray]
-    :param target: The predicted variables name, should be a str
+    :param ylabel: Label of the predicted variables, should be a str
     :param dataset_name: Name of dataset, should be a str
-    :param dir_: Save location for figures, should be a str
+    :param results_dir: Save location for figures, should be a str
     :return: None
     """
     logging.info("Plotting predictions")
@@ -43,10 +43,10 @@ def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list,
     for name, y_pred in y_preds:
         plt.plot(y_test.index, y_pred, c=next(colour), label=f"{name} Predictions")
     plt.legend()
-    ax.set(xlabel='Date', ylabel=target)
+    ax.set(xlabel='Date', ylabel=ylabel)
     fig.suptitle(f"Estimator Prediction - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
 
     # plots a closeup view if the test data and predictions
     fig, ax = plt.subplots(figsize=(16, 6))
@@ -55,15 +55,15 @@ def plotPrediction(y_train: Series, y_test: Series, y_pred: tuple | dict | list,
     for name, y_pred in y_preds:
         plt.plot(y_test.index, y_pred, c=next(colour), label=f"{name} Predictions")
     plt.legend()
-    ax.set(xlabel='Date', ylabel=target)
+    ax.set(xlabel='Date', ylabel=ylabel)
     fig.suptitle(f"Estimator Prediction (Closeup) - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
 
 
 def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = True, display: bool = True,
-                   dataset_name: str = '', dir_: str = '') -> dict:
+                   dataset_name: str = '', results_dir: str = '') -> dict:
     """
     Calculate the result analysis with options to display and plot.
 
@@ -73,7 +73,7 @@ def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = Tru
     :param plot: Whether to plot the results, should be a bool
     :param display: Whether to display the results, should be a bool
     :param dataset_name: Name of dataset, should be a str
-    :param dir_: Save location for figures, should be a str
+    :param results_dir: Save location for figures, should be a str
     :return: results - dict[str: list[str | float]]
     """
     logging.info("Analysing results")
@@ -112,14 +112,14 @@ def resultAnalysis(y_test: Series, y_pred: tuple | dict | list, plot: bool = Tru
         return results
 
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(12, 8), sharex='col')
-    utils._plotBar(ax1, results['names'], results['explained_variance'], 'Explained Variance')
-    utils._plotBar(ax2, results['names'], results['mean_squared_log_error'], 'Mean Squared Log Error')
-    utils._plotBar(ax3, results['names'], results['r2'], 'R2')
-    utils._plotBar(ax4, results['names'], results['mae'], 'MAE')
-    utils._plotBar(ax5, results['names'], results['mse'], 'MSE')
-    utils._plotBar(ax6, results['names'], results['rmse'], 'RMSE')
+    ml.utils._plotBar(ax1, results['names'], results['explained_variance'], 'Explained Variance')
+    ml.utils._plotBar(ax2, results['names'], results['mean_squared_log_error'], 'Mean Squared Log Error')
+    ml.utils._plotBar(ax3, results['names'], results['r2'], 'R2')
+    ml.utils._plotBar(ax4, results['names'], results['mae'], 'MAE')
+    ml.utils._plotBar(ax5, results['names'], results['mse'], 'MSE')
+    ml.utils._plotBar(ax6, results['names'], results['rmse'], 'RMSE')
     fig.suptitle(f"Result Analysis - {dataset_name}")
-    if dir_:
-        plt.savefig(utils.joinPath(dir_, fig._suptitle.get_text(), ext='.png'))
+    if results_dir:
+        plt.savefig(ml.utils.joinPath(results_dir, fig._suptitle.get_text(), ext='.png'))
     plt.show()
     return results
