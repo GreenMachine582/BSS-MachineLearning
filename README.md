@@ -17,3 +17,11 @@ The project will mostly revolve around reviewing and comparing available, and ap
 techniques using appropriate data and features to produce new findings. Through this project we will gain a clear 
 understanding about statistical machine learning techniques, cross validation, data and report analysis, regression 
 models and other ML techniques.
+
+## License & Reference
+The BSS project was developed as a capstone project for the Univertity of Canberra, this means that the project's
+idea cannot be used. The work may be referenced with the citation below.
+
+```
+Johnson, Chen, Li, Williams (2022). Forecasting Demand for Bike Sharing Systems and Analysis with Python (Version 0.4.5) [Computer software]. https://github.com/GreenMachine582/BSS-MachineLearning
+```
